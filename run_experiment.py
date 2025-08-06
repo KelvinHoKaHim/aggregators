@@ -221,7 +221,7 @@ def run_experiment():
                 axes_combined2[0, 3].plot(n_iteration, distance_PS,  label=agg)
             
             # MGDA is also considered a starred plot.
-            if MGDA.name in data:
+            if MGDA in aggregators:
                 normalized_aggregators.append(MGDA.name)
 
             for agg in normalized_aggregators:
