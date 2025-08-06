@@ -33,7 +33,7 @@ def iterate(problem, aggregator, seed, max_iter=15000, eta=0.001, eps=1e-2):
     mu = (curr_problem.lower_bound + curr_problem.upper_bound) / 2  
     epsilon = (curr_problem.upper_bound - curr_problem.lower_bound) / 4
     x = mu - epsilon + 2 * epsilon * torch.rand(curr_problem.dimension)  # restrict field of possible values x can take to 1/2 of the original range
-    prev_x = torch.ones(curr_problem.dimension)
+    prev_alpha = torch.ones(curr_problem.dimension)
     x.requires_grad = True
 
     # Initialize tracking lists
@@ -46,7 +46,10 @@ def iterate(problem, aggregator, seed, max_iter=15000, eta=0.001, eps=1e-2):
     for iter_count in range(max_iter):
         y = curr_problem(x)
         jacobian = find_jacobian(x, y)
-        d, alpha = curr_aggregator(jacobian)
+        try:
+            d, alpha = curr_aggregator(jacobian, prev_alpha = prev_alpha)
+        except:
+            d, alpha = curr_aggregator(jacobian)
         d_mgda, alpha_mgda = mgda(jacobian)
         norm_d_mgda = torch.norm(d_mgda).item()
         if aggregator.scheduling and norm_d_mgda < 0.05:  # handle scheduling
@@ -90,6 +93,7 @@ def iterate(problem, aggregator, seed, max_iter=15000, eta=0.001, eps=1e-2):
         if norm_d < eps or norm_d_mgda < eps: #or torch.linalg.vector_norm(x - prev_x) < 1e-7:
             break
         prev_x = x.clone()
+        prec_alpha = alpha.clone()
         
 
     return (x_trajectory, y_trajectory, track_norm_d, track_alpha, track_distance_PS, start_hitting_iterations, stop_hitting_iterations)
@@ -222,7 +226,7 @@ def run_experiment():
             
             # MGDA is also considered a starred plot.
             if MGDA in aggregators:
-                normalized_aggregators.append(MGDA.name)
+                normalized_aggregators = [MGDA] + normalized_aggregators
 
             for agg in normalized_aggregators:
                 data = results[agg]
