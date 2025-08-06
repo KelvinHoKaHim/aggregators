@@ -93,7 +93,7 @@ def iterate(problem, aggregator, seed, max_iter=15000, eta=0.001, eps=1e-2):
         if norm_d < eps or norm_d_mgda < eps: #or torch.linalg.vector_norm(x - prev_x) < 1e-7:
             break
         prev_x = x.clone()
-        prec_alpha = alpha.clone()
+        prev_alpha = alpha.clone()
         
 
     return (x_trajectory, y_trajectory, track_norm_d, track_alpha, track_distance_PS, start_hitting_iterations, stop_hitting_iterations)
