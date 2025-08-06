@@ -1,6 +1,5 @@
 import torch
 import numpy as np
-from mgda import MGDA
 from typing import List, Callable, Union, Tuple
 from matplotlib import pyplot as plt
 from aggregators import MGDA, Nash_MTL, Nash_MTL_star, UPGrad, UPGrad_star, DualProj, DualProj_star
