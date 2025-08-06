@@ -226,7 +226,7 @@ def run_experiment():
             
             # MGDA is also considered a starred plot.
             if MGDA in aggregators:
-                normalized_aggregators = [MGDA] + normalized_aggregators
+                normalized_aggregators = [MGDA.name] + normalized_aggregators
 
             for agg in normalized_aggregators:
                 data = results[agg]
