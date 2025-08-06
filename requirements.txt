@@ -1,0 +1,6 @@
+torch
+libmoon
+matplotlib
+numpy 
+cvxpy
+cvxopt
