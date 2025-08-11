@@ -8,6 +8,15 @@ from synthetic_problems import zdt3, vlmop2, omnitest, ewq
 problems = [vlmop2, omnitest, zdt3]
 aggregators = [MGDA, Nash_MTL, Nash_MTL_star, UPGrad, UPGrad_star, DualProj, DualProj_star]
 seeds = [24, 42, 48, 100, 123]
+colours = {
+    'MGDA': 'blue',
+    'Nash-MTL': 'gold',
+    'Nash-MTL*': 'orange',
+    'UPGrad': 'green',
+    'UPGrad*': 'olive',
+    'DualProj': 'purple',
+    'DualProj*': 'mediumvioletred'
+}
 seeds.sort()
 
 def plot_from_data():
@@ -66,10 +75,10 @@ def plot_from_data():
                 norm_d = get_values(data, 'norm_d')
                 distance_PS = get_values(data, 'distance_PS')
                 
-                axes_unnorm[0, 0].plot(n_iteration, f1,  label=agg)
-                axes_unnorm[0, 1].plot(n_iteration, f2,  label=agg)
-                axes_unnorm[1, 0].plot(n_iteration, norm_d,  label=agg)
-                axes_unnorm[1, 1].plot(n_iteration, distance_PS,  label=agg)
+                axes_unnorm[0, 0].plot(n_iteration, f1,  label=agg, color=colours[agg])
+                axes_unnorm[0, 1].plot(n_iteration, f2,  label=agg, color=colours[agg])
+                axes_unnorm[1, 0].plot(n_iteration, norm_d,  label=agg, color=colours[agg])
+                axes_unnorm[1, 1].plot(n_iteration, distance_PS,  label=agg, color=colours[agg])
                 if data['start_hitting_iterations'].size > 0:
                     start_idx = data['start_hitting_iterations']
                     axes_unnorm[0, 0].plot(start_idx, f1[start_idx], 'ro')
@@ -102,10 +111,10 @@ def plot_from_data():
                 norm_d = get_values(data, 'norm_d')
                 distance_PS = get_values(data, 'distance_PS')
                 
-                axes_combined2[0, 0].plot(n_iteration, f1,  label=agg)
-                axes_combined2[0, 1].plot(n_iteration, f2,  label=agg)
-                axes_combined2[0, 2].plot(n_iteration, norm_d,  label=agg)
-                axes_combined2[0, 3].plot(n_iteration, distance_PS,  label=agg)
+                axes_combined2[0, 0].plot(n_iteration, f1,  label=agg, color=colours[agg])
+                axes_combined2[0, 1].plot(n_iteration, f2,  label=agg, color=colours[agg])
+                axes_combined2[0, 2].plot(n_iteration, norm_d,  label=agg, color=colours[agg])
+                axes_combined2[0, 3].plot(n_iteration, distance_PS,  label=agg, color=colours[agg])
             
             # MGDA is also considered a starred plot.
             if MGDA in aggregators:
@@ -119,10 +128,10 @@ def plot_from_data():
                 norm_d = get_values(data, 'norm_d')
                 distance_PS = get_values(data, 'distance_PS')
                 
-                axes_combined2[1, 0].plot(n_iteration, f1,  label=agg)
-                axes_combined2[1, 1].plot(n_iteration, f2,  label=agg)
-                axes_combined2[1, 2].plot(n_iteration, norm_d,  label=agg)
-                axes_combined2[1, 3].plot(n_iteration, distance_PS,  label=agg)
+                axes_combined2[1, 0].plot(n_iteration, f1,  label=agg, color=colours[agg])
+                axes_combined2[1, 1].plot(n_iteration, f2,  label=agg, color=colours[agg])
+                axes_combined2[1, 2].plot(n_iteration, norm_d,  label=agg, color=colours[agg])
+                axes_combined2[1, 3].plot(n_iteration, distance_PS,  label=agg, color=colours[agg])
             titles = ["First Loss Function", "Second Loss Function", r"$\|d\|$", "Measure of Pareto Stationarity"]
             for col, title in enumerate(titles):
                 axes_combined2[0, col].set_title(f"{title}")
@@ -142,7 +151,7 @@ def plot_from_data():
                     n_iteration = np.arange(len(data['track_norm_d']))
                     values = get_values(data, data_key)
                     
-                    ax.plot(n_iteration, values,  label=agg)
+                    ax.plot(n_iteration, values,  label=agg, color=colours[agg])
                     if data['start_hitting_iterations'].size > 0:
                         start_idx = data['start_hitting_iterations']
                         ax.plot(start_idx, values[start_idx], 'ro')
@@ -169,7 +178,7 @@ def plot_from_data():
                         n_iteration = np.arange(len(data['track_norm_d']))
                         values = get_values(data, data_key)
                         
-                        ax.plot(n_iteration, values,  label=agg)
+                        ax.plot(n_iteration, values,  label=agg, color=colours[agg])
                         if data['start_hitting_iterations'].size > 0:
                             start_idx = data['start_hitting_iterations']
                             ax.plot(start_idx, values[start_idx], 'ro')
