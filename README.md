@@ -1,3 +1,7 @@
+# Dependancies 
+
+You can install all required dependancies other than libmoon by doing `pip install -r requirements.txt`. The libmoon posted on PyPI does not contain all the required scirpts to run the fairness benchmark. It is recommended to install the library manually by clone their repo: `git clone https://github.com/xzhang2523/libmoon`
+
 # Files in this repo
 1. run.py : run the experiment 
 2. aggregators.py : all aggregators that would be used in the experiment

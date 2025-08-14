@@ -5,11 +5,12 @@ import os
 import numpy as np 
 import pandas as pd
 import pickle
-from mgda import MGDA
-from upgrad import UPGrad
+from aggregators import MGDA, UPGrad, UPGrad_star, DualProj, DualProj_star, Nash_MTL, Nash_MTL_star
 from matplotlib import pyplot as plt 
 from cvxopt import solvers
 solvers.options['show_progress'] = False
+
+
 
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 path = "fairness_classification"
@@ -17,13 +18,12 @@ os.makedirs("fairness_classification", exist_ok=True) # create a directory to st
 data_train = mtl.get_dataset("adult", type = "train")
 data_test = mtl.get_dataset("adult", type = "test")
 data_val = mtl.get_dataset("adult", type = "val")
-model = mtl.model_from_dataset("adult", architecture="M4")   # a fully connected NN
-model = model.to("mps")
+
 
 # x represent the feature, y the label, and s is the sensible attribute (sensible attrbute is defined to be 'sex' by default)
 
 
-def evaluate():
+def evaluate(model):
     DEO = DEOHyperbolicTangentRelaxation()
     x = data_test.x.to("mps") 
     y = data_test.y.to("mps")
@@ -36,7 +36,9 @@ def evaluate():
     fairness = DEO(prediction, labels = y, sensible_attribute = s).item() # a positive value, the smaller, the better
     return (success_rate, fairness)
                                     
-def train(aggregator, mgda, eps = 1e-2, learning_rate = 0.001, num_epochs = 55000):
+def train(model, aggregator, mgda, seed, eps = 1e-3, learning_rate = 0.001, num_epochs = 65000):
+    curr_aggregator = aggregator() # initialised the aggregator
+    MGDA = mgda() # initialised the MGDA
     criterion1 = BinaryCrossEntropyLoss().to("mps") 
     criterion2 = DEOHyperbolicTangentRelaxation()
     track_loss1 = []
@@ -47,6 +49,7 @@ def train(aggregator, mgda, eps = 1e-2, learning_rate = 0.001, num_epochs = 5500
     x = data_train.x.to("mps")
     y = data_train.y.to("mps")
     s = data_train.s1.to("mps")
+    prev_alpha = torch.ones(2).to("mps")  # Initialize prev_alpha
 
     for epoch in range(num_epochs): # start training
         model.zero_grad()
@@ -69,8 +72,12 @@ def train(aggregator, mgda, eps = 1e-2, learning_rate = 0.001, num_epochs = 5500
         model.zero_grad()
  
         jacobian = torch.stack([grad1_flat, grad2_flat], dim=0) # It has shape 2xn where n is the total number of model parameters
-        d, alpha = aggregator(jacobian)
-        d_mgda, alpha_mgda = mgda(jacobian)
+        if aggregator.name == "Nash-MTL" or aggregator.name == "Nash-MTL*":
+            d, alpha = curr_aggregator(jacobian, prev_alpha)
+            prev_alpha = alpha
+        else:
+            d, alpha = curr_aggregator(jacobian)
+        d_mgda, alpha_mgda = MGDA(jacobian)
         total_loss = alpha[0] * loss1 + alpha[1] * loss2
         total_loss.backward()
 
@@ -82,6 +89,7 @@ def train(aggregator, mgda, eps = 1e-2, learning_rate = 0.001, num_epochs = 5500
         norm_d = torch.norm(d).item()
         norm_d_mgda = torch.norm(d_mgda).item()
         if (epoch + 1) % 10 == 0:
+            print(f"Training with {aggregator.name} with seed {seed}")
             print(f"Epoch {epoch+1}/{num_epochs}, Loss1: {loss1.item():.4f}, Loss2: {loss2.item():.4f}, d_MGDA = {norm_d_mgda}")
             print(f"GPU Memory Allocated: {torch.mps.current_allocated_memory() / 1024**2:.2f} MB")
         track_loss1.append(loss1.item())
@@ -92,7 +100,9 @@ def train(aggregator, mgda, eps = 1e-2, learning_rate = 0.001, num_epochs = 5500
             print(f"EARLY STOPPING at epoch {epoch+1}/{num_epochs}, Loss1: {loss1.item():.4f}, Loss2: {loss2.item():.4f}")
             break
 
-    aggregator_path = os.path.join(path, aggregator.__name__)
+    # Saving model and data
+
+    aggregator_path = os.path.join(path, aggregator.name, f"_{seed}")
     os.makedirs(aggregator_path, exist_ok=True) 
 
     model_path = os.path.join(aggregator_path, "model.pt")
@@ -104,17 +114,17 @@ def train(aggregator, mgda, eps = 1e-2, learning_rate = 0.001, num_epochs = 5500
         "iterations" : iterations,
         "first loss function" : track_loss1,
         "second loss function" : track_loss2,
-        "norm of d" : norm_d,
-        "measure of Pareto stationarity" : norm_d_mgda
+        "norm of d" : track_d,
+        "measure of Pareto stationarity" : track_d_MGDA
     }
 
-    pickle_filename = f"{aggregator.__name__}_data.pkl"  # save as pickle file
+    pickle_filename = f"{aggregator.name}_data.pkl"  # save as pickle file
     pickle_path = os.path.join(aggregator_path, pickle_filename) 
     with open(pickle_path, 'wb') as f:
         pickle.dump(data, f)
 
     df = pd.DataFrame(data)
-    csv_filename = f"{aggregator.__name__}_data.csv"
+    csv_filename = f"{aggregator.name}_data.csv"
     csv_path = os.path.join(aggregator_path, csv_filename)
     df.to_csv(csv_path, index=False)
 
@@ -123,59 +133,67 @@ def train(aggregator, mgda, eps = 1e-2, learning_rate = 0.001, num_epochs = 5500
 
 if __name__ == "__main__":
     
-    aggregator = UPGrad # will include other aggregator and different random seeds later
+    aggregators = [DualProj, DualProj_star, Nash_MTL, Nash_MTL_star, MGDA, UPGrad, UPGrad_star]
+    for seed in [64, 128]: # run with different random seeds
+        for aggregator in aggregators:
 
-    track_loss1, track_loss2, track_d, track_d_MGDA = train(aggregator, MGDA)
-    n_iterations = len(track_loss1)
-    iterations = range(n_iterations)
-
-
-    # plot and save each curve individually
-    for title, curve in zip(["First loss function", "Second loss functions", "Norm of d" , "Measure of Pareto Stationarity"], [track_loss1, track_loss2, track_d, track_d_MGDA]):
-        plt.plot(iterations, curve)
-        plt.title(title)
-        plt.xlabel("Number of iterations")
-        plot_filename = f"{aggregator.__name__}_{title.replace(' ', '_')}.png"
-        plot_path = os.path.join(path, aggregator.__name__, plot_filename)
-        plt.savefig(plot_path, dpi=300)
-        plt.close()
-
-    # plot everything in one graph
-    plt.subplot(2,2,1) 
-    plt.plot(iterations, track_loss1)
-    plt.title("First loss functions")
-    plt.xlabel("Number of iterations")
-
-    plt.subplot(2,2,2)
-    plt.plot(iterations, track_loss2)
-    plt.title("Second loss functions")
-    plt.xlabel("Number of iterations")
-
-    plt.subplot(2,2,3)
-    plt.plot(iterations, track_d)
-    plt.title("Norm of d")
-    plt.xlabel("Number of iterations")
-
-    plt.subplot(2,2,4)
-    plt.plot(iterations, track_d_MGDA)
-    plt.title("Measure of Pareto Stationarity")
-    plt.xlabel("Number of iterations")
-
-    plot_filename = f"{aggregator.__name__}_data.png"
-    plot_path = os.path.join(path, aggregator.__name__, plot_filename)
-    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-    #plt.show()
+            torch.manual_seed(seed)
+            np.random.seed(seed)
+            model = mtl.model_from_dataset("adult", architecture="M4")   # a fully connected NN
+            model = model.to("mps")
+            track_loss1, track_loss2, track_d, track_d_MGDA = train(model, aggregator, MGDA ,seed)
+            n_iterations = len(track_loss1)
+            iterations = range(n_iterations)
 
 
-    success_rate, fairness = evaluate()
-    print(f"Success rate = {success_rate}, Fairness = {fairness}")
-    plot_filename = f"{aggregator.__name__}_evaluation.txt"
-    txt_path = os.path.join(path, aggregator.__name__, plot_filename)
-    np.savetxt(txt_path, [success_rate, fairness])
+            # plot and save each curve individually
+            for title, curve in zip(["First loss function", "Second loss functions", "Norm of d" , "Measure of Pareto Stationarity"], [track_loss1, track_loss2, track_d, track_d_MGDA]):
+                plt.plot(iterations, curve)
+                plt.title(title)
+                plt.xlabel("Number of iterations")
+                plot_filename = f"{aggregator.name}_{title.replace(' ', '_')}.png"
+                plot_path = os.path.join(path, aggregator.name, f"_{seed}", plot_filename)
+                plt.savefig(plot_path, dpi=300)
+                plt.close()
 
-    
-    
+
+            plt.figure(figsize=(12, 12))  # Create a new figure for the combined plot
+            # plot everything in one graph
+            plt.subplot(2,2,1) 
+            plt.plot(iterations, track_loss1)
+            plt.title("First loss functions")
+            plt.xlabel("Number of iterations")
+
+            plt.subplot(2,2,2)
+            plt.plot(iterations, track_loss2)
+            plt.title("Second loss functions")
+            plt.xlabel("Number of iterations")
+
+            plt.subplot(2,2,3)
+            plt.plot(iterations, track_d)
+            plt.title("Norm of d")
+            plt.xlabel("Number of iterations")
+
+            plt.subplot(2,2,4)
+            plt.plot(iterations, track_d_MGDA)
+            plt.title("Measure of Pareto Stationarity")
+            plt.xlabel("Number of iterations")
+
+            plot_filename = f"{aggregator.name}_data.png"
+            plot_path = os.path.join(path, aggregator.name, f"_{seed}", plot_filename)
+            plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+            #plt.show()
+
+
+            success_rate, fairness = evaluate(model)
+            print(f"Success rate = {success_rate}, Fairness = {fairness}")
+            plot_filename = f"{aggregator.name}_evaluation.txt"
+            txt_path = os.path.join(path, aggregator.name, f"_{seed}", plot_filename)
+            np.savetxt(txt_path, [success_rate, fairness])
+
+            
+            
 
 
 
-    
+        
