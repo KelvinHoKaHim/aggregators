@@ -12,7 +12,7 @@ solvers.options['show_progress'] = False
 
 
 
-device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
 path = "fairness_classification"
 os.makedirs("fairness_classification", exist_ok=True) # create a directory to store model and data
 data_train = mtl.get_dataset("adult", type = "train")
@@ -25,9 +25,9 @@ data_val = mtl.get_dataset("adult", type = "val")
 
 def evaluate(model):
     DEO = DEOHyperbolicTangentRelaxation()
-    x = data_test.x.to("mps") 
-    y = data_test.y.to("mps")
-    s = data_test.s1.to("mps")
+    x = data_test.x.to(device) 
+    y = data_test.y.to(device)
+    s = data_test.s1.to(device)
     prediction = model(x)["logits"] # Don't know why LibMoon defined their foward function like this. 
                                     # The forward function returns a dictionary, in which the only key 
                                     # is "logists", and the corresponding value is the model prediction.
@@ -39,17 +39,17 @@ def evaluate(model):
 def train(model, aggregator, mgda, seed, eps = 1e-3, learning_rate = 0.001, num_epochs = 65000):
     curr_aggregator = aggregator() # initialised the aggregator
     MGDA = mgda() # initialised the MGDA
-    criterion1 = BinaryCrossEntropyLoss().to("mps") 
+    criterion1 = BinaryCrossEntropyLoss()
     criterion2 = DEOHyperbolicTangentRelaxation()
     track_loss1 = []
     track_loss2 = []
     track_d = []
     track_d_MGDA = []
 
-    x = data_train.x.to("mps")
-    y = data_train.y.to("mps")
-    s = data_train.s1.to("mps")
-    prev_alpha = torch.ones(2).to("mps")  # Initialize prev_alpha
+    x = data_train.x.to(device)
+    y = data_train.y.to(device)
+    s = data_train.s1.to(device)
+    prev_alpha = torch.ones(2).to(device)  # Initialize prev_alpha
 
     for epoch in range(num_epochs): # start training
         model.zero_grad()
@@ -91,7 +91,7 @@ def train(model, aggregator, mgda, seed, eps = 1e-3, learning_rate = 0.001, num_
         if (epoch + 1) % 10 == 0:
             print(f"Training with {aggregator.name} with seed {seed}")
             print(f"Epoch {epoch+1}/{num_epochs}, Loss1: {loss1.item():.4f}, Loss2: {loss2.item():.4f}, d_MGDA = {norm_d_mgda}")
-            print(f"GPU Memory Allocated: {torch.mps.current_allocated_memory() / 1024**2:.2f} MB")
+            print(f"GPU Memory Allocated: {torch.device.current_allocated_memory() / 1024**2:.2f} MB")
         track_loss1.append(loss1.item())
         track_loss2.append(loss2.item())
         track_d.append(norm_d)
@@ -140,7 +140,7 @@ if __name__ == "__main__":
             torch.manual_seed(seed)
             np.random.seed(seed)
             model = mtl.model_from_dataset("adult", architecture="M4")   # a fully connected NN
-            model = model.to("mps")
+            model = model.to(device)
             track_loss1, track_loss2, track_d, track_d_MGDA = train(model, aggregator, MGDA ,seed)
             n_iterations = len(track_loss1)
             iterations = range(n_iterations)

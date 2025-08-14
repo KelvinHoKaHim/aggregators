@@ -1,5 +1,5 @@
 import torch
-from typing import List, Callable, Any, Optional
+from typing import List, Callable, Any, Optional, Tuple
 import numpy as np
 import cvxpy as cp
 from cvxopt import matrix, solvers
@@ -7,7 +7,7 @@ from cvxopt import matrix, solvers
 class MGDA:
     name = "MGDA"
     
-    def __call__(self,jacobian : torch.Tensor, max_iters : int = 100, epsilon: float = 1e-4) -> Callable[[torch.Tensor], tuple[torch.Tensor, np.ndarray]]:
+    def __call__(self,jacobian : torch.Tensor, max_iters : int = 100, epsilon: float = 1e-4) -> Tuple[torch.Tensor, torch.Tensor]:
         # Input : a  nxd jacobian, where n is the number of task, d is the dimension of x (set to 4 by default)
         # Output : descent direction of length d, and alpha of length n.
         gramian = jacobian @ jacobian.t() 
@@ -33,6 +33,7 @@ class MGDA:
                 break
             
         alpha = alpha / torch.sum(alpha)  # Normalize alpha to unit length
+        alpha = alpha.to(device=jacobian.device)  # Ensure alpha is on the same device and dtype as jacobian
         descent_direction = jacobian.t() @ alpha
         return (descent_direction, alpha)
     
@@ -40,7 +41,7 @@ class MGDA:
 class Nash_MTL:
     name = "Nash-MTL"
     
-    def __call__(self ,jacobian: torch.Tensor, prev_alpha: Optional[torch.Tensor] = None, max_norm: float = 1.0, optim_niter: int = 20, return_status : bool =  False):
+    def __call__(self ,jacobian: torch.Tensor, prev_alpha: Optional[torch.Tensor] = None, max_norm: float = 1.0, optim_niter: int = 20, return_status : bool =  False) -> Union[Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor, str]]:
         """
         Computes the alpha weight vector using the 
         NashMTL algorithm based on the provided Jacobian matrix.
@@ -134,7 +135,6 @@ class Nash_MTL:
 
         # Convert to tensor
         alpha = torch.from_numpy(alpha_t).to(device=jacobian.device, dtype=jacobian.dtype)
-        alpha_original = alpha.clone()
 
         # Apply max norm constraint
         if max_norm > 0:
@@ -142,6 +142,7 @@ class Nash_MTL:
             if norm > max_norm:
                 alpha = (alpha / norm) * max_norm
 
+        alpha = alpha.to(device=jacobian.device)
         direction = alpha @ jacobian
         #print("STATUS : ", status)
         if return_status:
@@ -152,7 +153,7 @@ class Nash_MTL:
 
 class Nash_MTL_star:
     name = "Nash-MTL*"
-    def __call__(self,jacobian: torch.Tensor, prev_alpha: Optional[torch.Tensor] = None, max_norm: float = 1.0, optim_niter: int = 20, return_status : bool =  False):
+    def __call__(self,jacobian: torch.Tensor, prev_alpha: Optional[torch.Tensor] = None, max_norm: float = 1.0, optim_niter: int = 20, return_status : bool =  False) -> Union[Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor, str]]:
         """
         Computes the alpha weight vector using the 
         NashMTL algorithm based on the provided Jacobian matrix.
@@ -247,15 +248,9 @@ class Nash_MTL_star:
 
         # Convert to tensor
         alpha = torch.from_numpy(alpha_t).to(device=jacobian.device, dtype=jacobian.dtype)
-        alpha_original = alpha.clone()
 
-        # Apply max norm constraint
-        if max_norm > 0:
-            norm = torch.linalg.norm(alpha @ jacobian)
-            if norm > max_norm:
-                alpha = (alpha / norm) * max_norm
-
-        alpha = alpha / torch.sum(alpha) # normalisation
+        alpha = alpha / torch.sum(alpha) # normalisation instead of max norm
+        alpha = alpha.to(device=jacobian.device)
 
         direction = alpha @ jacobian
         #print("STATUS : ", status)
@@ -267,7 +262,7 @@ class Nash_MTL_star:
 class UPGrad:
     name = "UPGrad"
     
-    def __call__(self,jacobian : torch.Tensor) -> tuple[torch.Tensor, np.ndarray]:
+    def __call__(self,jacobian : torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         # Input : a  nxd jacobian, where n is the number of task, d is the dimension of x (set to 4 by default)
         # Output : descent direction of length d, and alpha of length n.
         m = len(jacobian)
@@ -307,7 +302,7 @@ class UPGrad:
 class UPGrad_star:
     name = "UPGrad*"
     
-    def __call__(self,jacobian : torch.Tensor) -> tuple[torch.Tensor, np.ndarray]:
+    def __call__(self,jacobian : torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         # Input : a  nxd jacobian, where n is the number of task, d is the dimension of x (set to 4 by default)
         # Output : descent direction of length d, and alpha of length n.
         m = len(jacobian)
@@ -348,7 +343,7 @@ class UPGrad_star:
 class DualProj:
     name = "DualProj"
     
-    def __call__(self,jacobian : torch.Tensor) -> (torch.Tensor, np.float64):
+    def __call__(self,jacobian : torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         # Input : a  nxd jacobian, where n is the number of task, d is the dimension of x (set to 4 by default)
         # Output : descent direction of length d, and alpha of length n.
         jac = jacobian.detach().cpu().numpy()
@@ -378,7 +373,7 @@ class DualProj:
 class DualProj_star:
     name = "DualProj*"
     
-    def __call__(self,jacobian : torch.Tensor) -> (torch.Tensor, np.float64):
+    def __call__(self,jacobian : torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         # Input : a  nxd jacobian, where n is the number of task, d is the dimension of x (set to 4 by default)
         # Output : descent direction of length d, and alpha of length n.
         jac = jacobian.detach().cpu().numpy()
