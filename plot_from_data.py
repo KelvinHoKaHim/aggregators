@@ -146,7 +146,7 @@ def plot_from_data():
             for plot_type, data_key in [("First_Loss_Function", 'f1'), ("Second_Loss_Function", 'f2'),
                                         ("Norm_of_d", 'norm_d'), ("Measure_of_Pareto_Stationarity", 'distance_PS')]:
                 fig, ax = plt.subplots(figsize=(6, 6))
-                for agg in standard_aggregators:
+                for agg in standard_aggregators + standard_aggregators + normalized_aggregators:
                     data = results[agg]
                     n_iteration = np.arange(len(data['track_norm_d']))
                     values = get_values(data, data_key)
