@@ -1,5 +1,5 @@
 import torch
-from typing import List, Callable, Any, Optional, Tuple
+from typing import List, Callable, Any, Optional, Tuple, Union
 import numpy as np
 import cvxpy as cp
 from cvxopt import matrix, solvers
@@ -41,7 +41,7 @@ class MGDA:
 class Nash_MTL:
     name = "Nash-MTL"
     
-    def __call__(self ,jacobian: torch.Tensor, prev_alpha: Optional[torch.Tensor] = None, max_norm: float = 1.0, optim_niter: int = 20, return_status : bool =  False) -> Union[Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor, str]]:
+    def __call__(self ,jacobian: torch.Tensor, prev_alpha: Optional[torch.Tensor] = None, max_norm: float = 0.1, optim_niter: int = 50, return_status : bool =  False) -> Union[Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor, str]]:
         """
         Computes the alpha weight vector using the 
         NashMTL algorithm based on the provided Jacobian matrix.
@@ -78,12 +78,9 @@ class Nash_MTL:
 
         # Compute GTG matrix
         GTG = jacobian @ jacobian.T
-        normalization_factor = np.linalg.norm(GTG.detach().cpu().numpy())
-        gtg = GTG.detach().cpu().numpy() / normalization_factor
-
+        gtg = GTG.detach().cpu().numpy()
         # Define optimization problem with cvxpy parameters
         G_param = cp.Parameter(shape=(n_tasks, n_tasks))
-        normalization_factor_param = cp.Parameter(shape=(1,))
         prvs_alpha_param = cp.Parameter(shape=(n_tasks,))
         alpha_param = cp.Variable(shape=(n_tasks,), nonneg=True)
 
@@ -94,17 +91,18 @@ class Nash_MTL:
         phi_alpha = prvs_phi_tag @ (alpha_param - prvs_alpha_param)
 
         # Define objective and constraints
-        objective = cp.Minimize(cp.sum(G_alpha) + phi_alpha / normalization_factor_param)
+        objective = cp.Minimize(cp.sum(G_alpha) + phi_alpha )
         constraints = [
-            -cp.log(alpha_param[i] * normalization_factor_param) - cp.log(G_alpha[i]) <= 0
+            -cp.log(alpha_param[i]) - cp.log(G_alpha[i]) <= 0
             for i in range(n_tasks)
         ]
+        constraints.append(cp.norm(G_alpha) <= np.sqrt(n_tasks)) 
         prob = cp.Problem(objective, constraints)
 
         # Assign parameter values
         G_param.value = gtg
 
-        normalization_factor_param.value = np.array([normalization_factor])
+        #normalization_factor_param.value = np.array([normalization_factor])
 
         # Iterative optimization
         alpha_t = prev_alpha
@@ -112,39 +110,42 @@ class Nash_MTL:
             prvs_alpha_param.value = alpha_t
             alpha_param.value = alpha_t  # Warm start
             try:
-            #prob.solve(solver=cp.MOSEK, warm_start=True, max_iters=100)
+                #prob.solve(solver=cp.MOSEK, warm_start=True, max_iters=100)
                 prob.solve(solver=cp.ECOS, warm_start=True, max_iters=100)
                 #if np.linalg.matrix_rank(gtg) != n_tasks or prob.status != "optimal":
-                    #print(np.linalg.matrix_rank(gtg), prob.status)
+                #    #print(np.linalg.matrix_rank(gtg), prob.status)
                 status = prob.status if prob.status == "optimal" else "suboptimal"
                 if prob.status not in ["optimal", "optimal_inaccurate"]:
-                    #print("CAUTION : ", prob.status)
+                    print("CAUTION : ", prob.status)
                     alpha_t = prvs_alpha_param.value
                 else:
                     alpha_t = alpha_param.value
             except Exception:
+                print("Error")
                 alpha_t = prvs_alpha_param.value
+
 
             # Check stopping criteria
             if (alpha_t is None or 
-                np.linalg.norm(gtg @ alpha_t - 1 / (alpha_t + 1e-10)) < 1e-3 or 
+                np.linalg.norm(gtg @ alpha_t - 1 / (alpha_t)) < 1e-6 or 
                 np.linalg.norm(alpha_t - prvs_alpha_param.value) < 1e-6):
                 #print("Early stopping")
                 #print(np.max(np.abs(gtg @ alpha_t - 1 / (alpha_t + 1e-10))))
                 break
 
-        # Convert to tensor
-        alpha = torch.from_numpy(alpha_t).to(device=jacobian.device, dtype=jacobian.dtype)
+        alpha = torch.from_numpy(alpha_t).to(device=jacobian.device, dtype = torch.float32)
 
         # Apply max norm constraint
         if max_norm > 0:
             norm = torch.linalg.norm(alpha @ jacobian)
             if norm > max_norm:
                 alpha = (alpha / norm) * max_norm
-
+        
         alpha = alpha.to(device=jacobian.device)
         direction = alpha @ jacobian
         #print("STATUS : ", status)
+        #print("3")
+        #print(torch.linalg.vector_norm((jacobian @ jacobian.t() @ alpha) - 1 / alpha, ord = np.inf).item())
         if return_status:
             return (direction, alpha, status)
         else:
@@ -192,8 +193,7 @@ class Nash_MTL_star:
 
         # Compute GTG matrix
         GTG = jacobian @ jacobian.T
-        normalization_factor = np.linalg.norm(GTG.detach().cpu().numpy())
-        gtg = GTG.detach().cpu().numpy() / normalization_factor
+        gtg = GTG.detach().cpu().numpy() 
 
         # Define optimization problem with cvxpy parameters
         G_param = cp.Parameter(shape=(n_tasks, n_tasks))
@@ -208,16 +208,17 @@ class Nash_MTL_star:
         phi_alpha = prvs_phi_tag @ (alpha_param - prvs_alpha_param)
 
         # Define objective and constraints
-        objective = cp.Minimize(cp.sum(G_alpha) + phi_alpha / normalization_factor_param)
+        objective = cp.Minimize(cp.sum(G_alpha) + phi_alpha )
         constraints = [
-            -cp.log(alpha_param[i] * normalization_factor_param) - cp.log(G_alpha[i]) <= 0
+            -cp.log(alpha_param[i]) - cp.log(G_alpha[i]) <= 0
             for i in range(n_tasks)
         ]
+        constraints.append(cp.norm(G_alpha) <= np.sqrt(n_tasks)) 
         prob = cp.Problem(objective, constraints)
 
         # Assign parameter values
         G_param.value = gtg
-        normalization_factor_param.value = np.array([normalization_factor])
+        #normalization_factor_param.value = np.array([normalization_factor])
 
         # Iterative optimization
         alpha_t = prev_alpha
@@ -236,11 +237,12 @@ class Nash_MTL_star:
                 else:
                     alpha_t = alpha_param.value
             except Exception:
+                print("Error")
                 alpha_t = prvs_alpha_param.value
 
             # Check stopping criteria
             if (alpha_t is None or 
-                np.linalg.norm(gtg @ alpha_t - 1 / (alpha_t + 1e-10)) < 1e-3 or 
+                np.linalg.norm(gtg @ alpha_t - 1 / (alpha_t)) < 1e-6 or 
                 np.linalg.norm(alpha_t - prvs_alpha_param.value) < 1e-6):
                 #print("Early stopping")
                 #print(np.max(np.abs(gtg @ alpha_t - 1 / (alpha_t + 1e-10))))
@@ -267,15 +269,17 @@ class UPGrad:
         # Output : descent direction of length d, and alpha of length n.
         m = len(jacobian)
         #G = jacobian @ jacobian.T
-        jac = jacobian.detach().cpu()
+        jac = jacobian.detach().cpu().numpy()
         G = jac @ jac.T
 
         G_norm = np.trace(G)
-        if G_norm < 1e-4:
-            G = np.zeros_like(G) # If the norm is too small, we set it to zero
-        else:
-            G = G / G_norm  # Normalize the Gramian matrix, avoid numerical issues when entries of G is too small
-        G = G + 1e-4 * np.eye(len(G)) # to ensure positive definiteness
+        #G = G / G_norm  # Normalize the Gramian matrix, avoid numerical issues when entries of G is too small
+        G = G.astype(np.double)
+        #if G_norm < 1e-4:
+        #    G = np.zeros_like(G) # If the norm is too small, we set it to zero
+        #else:
+            
+        #G = G + 1e-4 * np.eye(len(G)) # to ensure positive definiteness
 
         # UPgrad projects each gradient to dual cone of the Jacobian, to get projected gradients
         # You average the projected gradients (implementation-wise, you may be averaging the alphas)
@@ -307,21 +311,23 @@ class UPGrad_star:
         # Output : descent direction of length d, and alpha of length n.
         m = len(jacobian)
         #G = jacobian @ jacobian.T
-        jac = jacobian.detach().cpu()
+        jac = jacobian.detach().cpu().numpy()
         G = jac @ jac.T
 
         G_norm = np.trace(G)
-        if G_norm < 1e-4:
-            G = np.zeros_like(G) # If the norm is too small, we set it to zero
-        else:
-            G = G / G_norm  # Normalize the Gramian matrix, avoid numerical issues when entries of G is too small
-        G = G + 1e-4 * np.eye(len(G)) # to ensure positive definiteness
+        #G = G / G_norm  # Normalize the Gramian matrix, avoid numerical issues when entries of G is too small
+        G = G.astype(np.double)
+        #if G_norm < 1e-4:
+        #    G = np.zeros_like(G) # If the norm is too small, we set it to zero
+        #else:
+        #    
+        #G = G + 1e-4 * np.eye(len(G)) # to ensure positive definiteness
 
         # UPgrad projects each gradient to dual cone of the Jacobian, to get projected gradients
         # You average the projected gradients (implementation-wise, you may be averaging the alphas)
         # That projection will be in the confe as well (alphas are non-negative)
 
-        P = matrix(np.float64(G))
+        P = matrix(G)
         q = matrix(np.zeros(m))
         A = None
         b = None
@@ -351,10 +357,12 @@ class DualProj:
         G = jac @ jac.T 
 
         G_norm = np.sum(np.diag(G)) #normalization to ensure positive definiteness and full rank
-        if G_norm < 1e-4:
-            G = np.zeros_like(G)
-        G = G / G_norm
-        G = G + 1e-4 * np.eye(len(G))
+        #G = G / G_norm
+        G = G.astype(np.double)
+        #if G_norm < 1e-4:
+        #    G = np.zeros_like(G)
+       # 
+        #G = G + 1e-4 * np.eye(len(G))
 
         P = matrix(G)                           # Minimize v^T JJ^T v
         q = matrix(np.zeros(m))                 # with constraint
@@ -381,10 +389,12 @@ class DualProj_star:
         G = jac @ jac.T 
 
         G_norm = np.sum(np.diag(G)) #normalization to ensure positive definiteness and full rank
-        if G_norm < 1e-4:
-            G = np.zeros_like(G)
-        G = G / G_norm
-        G = G + 1e-4 * np.eye(len(G))
+        #G = G / G_norm
+        G = G.astype(np.double)
+        #if G_norm < 1e-4:
+        #    G = np.zeros_like(G)
+        #
+        #G = G + 1e-4 * np.eye(len(G))
 
         P = matrix(G)                           # Minimize v^T JJ^T v
         q = matrix(np.zeros(m))                 # with constraint
