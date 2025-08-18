@@ -41,7 +41,7 @@ class MGDA:
 class Nash_MTL:
     name = "Nash-MTL"
     
-    def __call__(self ,jacobian: torch.Tensor, prev_alpha: Optional[torch.Tensor] = None, max_norm: float = 0.1, optim_niter: int = 50, return_status : bool =  False) -> Union[Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor, str]]:
+    def __call__(self ,jacobian: torch.Tensor, prev_alpha: Optional[torch.Tensor] = None, max_norm: float = 1.0, optim_niter: int = 50, return_status : bool =  False) -> Union[Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor, str]]:
         """
         Computes the alpha weight vector using the 
         NashMTL algorithm based on the provided Jacobian matrix.
@@ -120,8 +120,8 @@ class Nash_MTL:
                     alpha_t = prvs_alpha_param.value
                 else:
                     alpha_t = alpha_param.value
-            except Exception:
-                print("Error")
+            except Exception as e:
+                print(f"Error {e}")
                 alpha_t = prvs_alpha_param.value
 
 
@@ -135,7 +135,7 @@ class Nash_MTL:
 
         alpha = torch.from_numpy(alpha_t).to(device=jacobian.device, dtype = torch.float32)
 
-        # Apply max norm constraint
+        # Apply clipping
         if max_norm > 0:
             norm = torch.linalg.norm(alpha @ jacobian)
             if norm > max_norm:
@@ -143,9 +143,7 @@ class Nash_MTL:
         
         alpha = alpha.to(device=jacobian.device)
         direction = alpha @ jacobian
-        #print("STATUS : ", status)
-        #print("3")
-        #print(torch.linalg.vector_norm((jacobian @ jacobian.t() @ alpha) - 1 / alpha, ord = np.inf).item())
+
         if return_status:
             return (direction, alpha, status)
         else:
@@ -197,7 +195,6 @@ class Nash_MTL_star:
 
         # Define optimization problem with cvxpy parameters
         G_param = cp.Parameter(shape=(n_tasks, n_tasks))
-        normalization_factor_param = cp.Parameter(shape=(1,))
         prvs_alpha_param = cp.Parameter(shape=(n_tasks,))
         alpha_param = cp.Variable(shape=(n_tasks,), nonneg=True)
 
@@ -232,20 +229,18 @@ class Nash_MTL_star:
                 #    #print(np.linalg.matrix_rank(gtg), prob.status)
                 status = prob.status if prob.status == "optimal" else "suboptimal"
                 if prob.status not in ["optimal", "optimal_inaccurate"]:
-                    #print("CAUTION : ", prob.status)
+                    print("CAUTION : ", prob.status)
                     alpha_t = prvs_alpha_param.value
                 else:
                     alpha_t = alpha_param.value
-            except Exception:
-                print("Error")
+            except Exception as e:
+                print(f"Error {e}")
                 alpha_t = prvs_alpha_param.value
 
             # Check stopping criteria
             if (alpha_t is None or 
                 np.linalg.norm(gtg @ alpha_t - 1 / (alpha_t)) < 1e-6 or 
                 np.linalg.norm(alpha_t - prvs_alpha_param.value) < 1e-6):
-                #print("Early stopping")
-                #print(np.max(np.abs(gtg @ alpha_t - 1 / (alpha_t + 1e-10))))
                 break
 
         # Convert to tensor
@@ -255,7 +250,6 @@ class Nash_MTL_star:
         alpha = alpha.to(device=jacobian.device)
 
         direction = alpha @ jacobian
-        #print("STATUS : ", status)
         if return_status:
             return (direction, alpha, status)
         else:
@@ -268,18 +262,13 @@ class UPGrad:
         # Input : a  nxd jacobian, where n is the number of task, d is the dimension of x (set to 4 by default)
         # Output : descent direction of length d, and alpha of length n.
         m = len(jacobian)
-        #G = jacobian @ jacobian.T
         jac = jacobian.detach().cpu().numpy()
         G = jac @ jac.T
 
         G_norm = np.trace(G)
         #G = G / G_norm  # Normalize the Gramian matrix, avoid numerical issues when entries of G is too small
         G = G.astype(np.double)
-        #if G_norm < 1e-4:
-        #    G = np.zeros_like(G) # If the norm is too small, we set it to zero
-        #else:
-            
-        #G = G + 1e-4 * np.eye(len(G)) # to ensure positive definiteness
+
 
         # UPgrad projects each gradient to dual cone of the Jacobian, to get projected gradients
         # You average the projected gradients (implementation-wise, you may be averaging the alphas)
@@ -317,11 +306,6 @@ class UPGrad_star:
         G_norm = np.trace(G)
         #G = G / G_norm  # Normalize the Gramian matrix, avoid numerical issues when entries of G is too small
         G = G.astype(np.double)
-        #if G_norm < 1e-4:
-        #    G = np.zeros_like(G) # If the norm is too small, we set it to zero
-        #else:
-        #    
-        #G = G + 1e-4 * np.eye(len(G)) # to ensure positive definiteness
 
         # UPgrad projects each gradient to dual cone of the Jacobian, to get projected gradients
         # You average the projected gradients (implementation-wise, you may be averaging the alphas)
@@ -359,10 +343,6 @@ class DualProj:
         G_norm = np.sum(np.diag(G)) #normalization to ensure positive definiteness and full rank
         #G = G / G_norm
         G = G.astype(np.double)
-        #if G_norm < 1e-4:
-        #    G = np.zeros_like(G)
-       # 
-        #G = G + 1e-4 * np.eye(len(G))
 
         P = matrix(G)                           # Minimize v^T JJ^T v
         q = matrix(np.zeros(m))                 # with constraint
@@ -391,10 +371,7 @@ class DualProj_star:
         G_norm = np.sum(np.diag(G)) #normalization to ensure positive definiteness and full rank
         #G = G / G_norm
         G = G.astype(np.double)
-        #if G_norm < 1e-4:
-        #    G = np.zeros_like(G)
-        #
-        #G = G + 1e-4 * np.eye(len(G))
+
 
         P = matrix(G)                           # Minimize v^T JJ^T v
         q = matrix(np.zeros(m))                 # with constraint
