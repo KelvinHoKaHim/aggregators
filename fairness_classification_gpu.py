@@ -93,7 +93,6 @@ def train(model, aggregator, mgda, seed, eps = 1e-3, learning_rate = 0.01, num_e
         if (epoch + 1) % 10 == 0:
             print(f"Training with {aggregator.name} with seed {seed}")
             print(f"Epoch {epoch+1}/{num_epochs}, Loss1: {loss1.item():.4f}, Loss2: {loss2.item():.4f}, ||d|| = {norm_d}, ||d_MGDA|| = {norm_d_mgda}")
-            print(f"GPU Memory Allocated: {torch.device.current_allocated_memory() / 1024**2:.2f} MB")
         track_loss1.append(loss1.item())
         track_loss2.append(loss2.item())
         track_d.append(norm_d)
