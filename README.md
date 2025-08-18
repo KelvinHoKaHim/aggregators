@@ -1,6 +1,6 @@
 # Dependancies 
 
-You can install all required dependancies other than libmoon by doing `pip install -r requirements.txt`. The libmoon posted on PyPI does not contain all the required scirpts to run the fairness benchmark. It is recommended to install the library manually by clone their repo: `git clone https://github.com/xzhang2523/libmoon`
+You can install all required dependancies other than libmoon by doing `pip install -r requirements.txt`. The libmoon posted on PyPI does not contain all the required scirpts to run the fairness benchmark. It is recommended to install the library manually by cloning their repo: `git clone https://github.com/xzhang2523/libmoon`
 
 # Files in this repo
 1. run.py : run the experiment 
@@ -8,12 +8,17 @@ You can install all required dependancies other than libmoon by doing `pip insta
 3. synthetic_problems.py : all synthetic problems that would be used in the experiment
 4. fairness_classification_gpu.py : run the fairness benchmark 
 5. fairness_classification_gpu.py : run the fairness benchmark with gpu acceleration
+6. plot_from_data.py : plot graphs for synthetic problems
+7. plot_fairness.py : plot graphs for two objective fairness benchmark
+8. plot_fairness.py : plot graphs for three objective fairness benchmark
 
 # How to run experiment 
 
 To run experiment, run `python3 run_experiemtn.py`. When the code is running, the scipt would create folder `experiment result` to store all graphs, csv's, and pickle files. 
 
-To change experiment settings, edit these lists which can be found at the beginnging of the code.
+Similarly, 
+
+To change experiment settings, edit these lists which can be found at the beginning of the code (or in the first line of `if __name__ == "__main__"` for fairness benchmark).
 
 1. aggregators : Those aggregator that will be used in the experiment. To include more aggregtors, import the aggregators and include them in the array. Note that all aggregators are functions with typing `aggregators(jacobian : torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]`. The input is a $n$ by $m$ jacobian, where $n$ is the number of task, and $m$ is the dimension of $x$. The output is a tuple ($d$, $\alpha$). $d$ is a 1D tensor of length $m$ that represents the descent direction, and $\alpha$ 1D tensor of length $n$ that represents the weighting.
 
@@ -21,7 +26,7 @@ To change experiment settings, edit these lists which can be found at the beginn
 
 3. seeds : The random seeds that will be used in the experiment.
 
-To change other parameters such as learning rate, tolarance, maximum number of iteration, etc., change their default value in `iteration()`.
+To change other parameters such as learning rate, tolarance, maximum number of iteration, etc., change their default value in `iteration()`(synthetic problems), or `train()` (fairness).
 
 # Graph plotting
 
@@ -48,7 +53,7 @@ To change other parameters such as learning rate, tolarance, maximum number of i
 │   ├── <problem_name_3>
 
 ```
-,n_iteration,x_trajectory,y_trajectory,norm_d,alpha,measure_PS,Start_hitting_boundary,stop_hitting_boundary
+
 Each pickle file should include the following columns:
 - iteration : number of interations
 - x_trajectory : each row is an array representing the value of x 
