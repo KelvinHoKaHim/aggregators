@@ -4,7 +4,9 @@ import pandas as pd
 import numpy as np 
 
 
-file_path = "fairness_classification/plots"
+file_path = "fairness_classification"
+output_path = os.path.join(file_path, "plots")
+os.makedirs(output_path, exist_ok=True)
 
 def plot(seed = int):
     colours = {
@@ -73,16 +75,16 @@ def plot(seed = int):
     ax_f1.legend()
     ax_f2.legend()
     ax_d.legend()
-    ax_dps.lengend()
-    fig_combined.savefig(os.path.join(file_path, f"{str(seed)}_combined.png"), dpi = 300)
+    ax_dps.legend()
+    fig_combined.savefig(os.path.join(output_path, f"{str(seed)}_combined.png"), dpi = 300)
     plt.close(fig_combined)
-    fig_f1.savefig(os.path.join(file_path, f"{str(seed)}_first_loss_function.png"), dpi = 300)
+    fig_f1.savefig(os.path.join(output_path, f"{str(seed)}_first_loss_function.png"), dpi = 300)
     plt.close(fig_f1)
-    fig_f2.savefig(os.path.join(file_path, f"{str(seed)}_second_loss_function.png"), dpi = 300)
+    fig_f2.savefig(os.path.join(output_path, f"{str(seed)}_second_loss_function.png"), dpi = 300)
     plt.close(fig_f2)
-    fig_d.savefig(os.path.join(file_path, f"{str(seed)}_norm_of_d.png"), dpi = 300)
+    fig_d.savefig(os.path.join(output_path, f"{str(seed)}_norm_of_d.png"), dpi = 300)
     plt.close(fig_d)
-    fig_dps.savefig(os.path.join(file_path, f"{str(seed)}_measure_of_Pareto_stationarity.png"), dpi = 300)
+    fig_dps.savefig(os.path.join(output_path, f"{str(seed)}_measure_of_Pareto_stationarity.png"), dpi = 300)
     plt.close(fig_dps)
 
             
