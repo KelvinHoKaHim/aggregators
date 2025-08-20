@@ -7,7 +7,7 @@ from cvxopt import matrix, solvers
 class MGDA:
     name = "MGDA"
     
-    def __call__(self,jacobian : torch.Tensor, max_iters : int = 100, epsilon: float = 1e-4) -> Tuple[torch.Tensor, torch.Tensor]:
+    def __call__(self,jacobian : torch.Tensor, max_iters : int = 500, epsilon: float = 1e-7) -> Tuple[torch.Tensor, torch.Tensor]:
         # Input : a  nxd jacobian, where n is the number of task, d is the dimension of x (set to 4 by default)
         # Output : descent direction of length d, and alpha of length n.
         gramian = jacobian @ jacobian.t() 
@@ -107,9 +107,9 @@ class Nash_MTL:
         # Iterative optimization
         alpha_t = prev_alpha
         for _ in range(optim_niter):
-            prvs_alpha_param.value = alpha_t
-            alpha_param.value = alpha_t  # Warm start
             try:
+                prvs_alpha_param.value = alpha_t
+                alpha_param.value = alpha_t  # Warm start
                 #prob.solve(solver=cp.MOSEK, warm_start=True, max_iters=100)
                 prob.solve(solver=cp.ECOS, warm_start=True, max_iters=100)
                 #if np.linalg.matrix_rank(gtg) != n_tasks or prob.status != "optimal":
@@ -120,7 +120,7 @@ class Nash_MTL:
                     alpha_t = prvs_alpha_param.value
                 else:
                     alpha_t = alpha_param.value
-            except Exception as e:
+            except Exception as e: # sometimes when lr is not small enough, an exception "TypeError: prvs_alpha_param.value must be real number" is raised. Seem to be issues internal to the solver
                 print(f"Error {e}")
                 alpha_t = prvs_alpha_param.value
 
@@ -220,9 +220,9 @@ class Nash_MTL_star:
         # Iterative optimization
         alpha_t = prev_alpha
         for _ in range(optim_niter):
-            prvs_alpha_param.value = alpha_t
-            alpha_param.value = alpha_t  # Warm start
             try:
+                prvs_alpha_param.value = alpha_t
+                alpha_param.value = alpha_t  # Warm start
                 #prob.solve(solver=cp.MOSEK, warm_start=True, max_iters=100)
                 prob.solve(solver=cp.ECOS, warm_start=True, max_iters=100)
                 #if np.linalg.matrix_rank(gtg) != n_tasks or prob.status != "optimal":
@@ -233,7 +233,7 @@ class Nash_MTL_star:
                     alpha_t = prvs_alpha_param.value
                 else:
                     alpha_t = alpha_param.value
-            except Exception as e:
+            except Exception as e: # sometimes when lr is not small enough, an exception "TypeError: prvs_alpha_param.value must be real number" is raised. Seem to be issues internal to the solver
                 print(f"Error {e}")
                 alpha_t = prvs_alpha_param.value
 
@@ -265,7 +265,7 @@ class UPGrad:
         jac = jacobian.detach().cpu().numpy()
         G = jac @ jac.T
 
-        G_norm = np.trace(G)
+        #G_norm = np.trace(G)
         #G = G / G_norm  # Normalize the Gramian matrix, avoid numerical issues when entries of G is too small
         G = G.astype(np.double)
 
@@ -303,7 +303,7 @@ class UPGrad_star:
         jac = jacobian.detach().cpu().numpy()
         G = jac @ jac.T
 
-        G_norm = np.trace(G)
+        #G_norm = np.trace(G)
         #G = G / G_norm  # Normalize the Gramian matrix, avoid numerical issues when entries of G is too small
         G = G.astype(np.double)
 
@@ -340,7 +340,7 @@ class DualProj:
         m = len(jac)
         G = jac @ jac.T 
 
-        G_norm = np.sum(np.diag(G)) #normalization to ensure positive definiteness and full rank
+        #G_norm = np.sum(np.diag(G)) #normalization to ensure positive definiteness and full rank
         #G = G / G_norm
         G = G.astype(np.double)
 
@@ -368,7 +368,7 @@ class DualProj_star:
         m = len(jac)
         G = jac @ jac.T 
 
-        G_norm = np.sum(np.diag(G)) #normalization to ensure positive definiteness and full rank
+        #G_norm = np.sum(np.diag(G)) #normalization to ensure positive definiteness and full rank
         #G = G / G_norm
         G = G.astype(np.double)
 
