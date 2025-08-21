@@ -4,7 +4,5 @@ matplotlib
 numpy 
 cvxpy
 cvxopt
-libmoon
 pandas
-seaborn
-cv2
+scikit-learn

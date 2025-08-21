@@ -1,69 +1,108 @@
-# Dependancies 
 
-You can install all required dependancies other than libmoon by doing `pip install -r requirements.txt`. The libmoon posted on PyPI does not contain all the required scirpts to run the fairness benchmark. It is recommended to install the library manually by cloning their repo: `git clone https://github.com/xzhang2523/libmoon`
+## Dependencies 
 
-# Files in this repo
-1. run.py : run the experiment 
-2. aggregators.py : all aggregators that would be used in the experiment
-3. synthetic_problems.py : all synthetic problems that would be used in the experiment
-4. fairness_classification_gpu.py : run the fairness benchmark 
-5. fairness_classification_gpu.py : run the fairness benchmark with gpu acceleration
-6. plot_from_data.py : plot graphs for synthetic problems
-7. plot_fairness.py : plot graphs for two objective fairness benchmark
-8. plot_fairness.py : plot graphs for three objective fairness benchmark
+You can install all required dependencies other than libmoon through pip: 
+```
+pip install -r requirements.txt
+``` 
+We have made custom modification to libmoon, including introducing custom loss functions and commenting out import statements irrelevant to our experiments. We have provided the modified libmoon library in this repository. The codebase for the original libmoon library can be found here : https://github.com/xzhang2523/libmoon
 
-# How to run experiment 
+## Running the experiments
 
-To run experiment, run `python3 run_experiemtn.py`. When the code is running, the scipt would create folder `experiment result` to store all graphs, csv's, and pickle files. 
-
-Similarly, 
-
-To change experiment settings, edit these lists which can be found at the beginning of the code (or in the first line of `if __name__ == "__main__"` for fairness benchmark).
-
-1. aggregators : Those aggregator that will be used in the experiment. To include more aggregtors, import the aggregators and include them in the array. Note that all aggregators are functions with typing `aggregators(jacobian : torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]`. The input is a $n$ by $m$ jacobian, where $n$ is the number of task, and $m$ is the dimension of $x$. The output is a tuple ($d$, $\alpha$). $d$ is a 1D tensor of length $m$ that represents the descent direction, and $\alpha$ 1D tensor of length $n$ that represents the weighting.
-
-2. problems : The synthetic problem the experiment will be using. To include more problems, define the problems as a function `problem(x : torch.Tensor) -> List[torch.Tensor]`. The function will take in a 1D torch Tensor as input, and output a list of 1 by 1 tensor, each representing one function value of the objective function. Length of the output list = number of objective functions for the problem. Upon defining a new synthetic problem, the dimension of $x$ and the bounds of the problem should also be specified by changing the dictionary `problem_dim` and `bounds` respectively.
-
-3. seeds : The random seeds that will be used in the experiment.
-
-To change other parameters such as learning rate, tolarance, maximum number of iteration, etc., change their default value in `iteration()`(synthetic problems), or `train()` (fairness).
-
-# Graph plotting
-
-`run_experiemtn.py` will run the experiment and plot the corresponding graphs simultaneously. If only graph plotting is needed, one can store all pickle files in the folder `experiment result` folder under the correct subfolder. `experiment result` is organised as follows:
-
-```bash
-├── experiment result
-│   ├── <problem_name_1>
-│   │   ├── seed_<seed_number1>
-├   │   ├── seed_<seed_number2>
-│   │   │   ├──data
-├   │   │   │   ├── <aggregator_name_1>*.pkl
-├   │   │   │   ├── <aggregator_name_1>.pkl
-├   │   │   │   ├── <aggregator_name_2>*.pkl
-├   │   │   │   ├── <aggregator_name_2>.pkl
-│   │   │   ├──plot
-├   │   │   │   ├── combined.png
-├   │   │   │   ├── combined2.png
-├   │   │   │   ├── <aggregator_name_1>_normalised.png
-├   │   │   │   ├── <aggregator_name_1>_unnormalised.png
-├   │   │   │   ├── <aggregator_name_2>_normalised.png
-├   │   │   │   ├── <aggregator_name_2>_unnormalised.png
-│   ├── <problem_name_2>
-│   ├── <problem_name_3>
-
+- To run the synthetic benchmark: 
+```
+python3 -m synthetic_benchmark.run
+```
+- To run the two objective fairness benchmark: 
+```
+python3 -m fairness_benchmark_2.run
+```
+- To run the three objective fairness benchmark: 
+```
+python3 -m fairness_benchmark_3.run
 ```
 
-Each pickle file should include the following columns:
-- iteration : number of interations
-- x_trajectory : each row is an array representing the value of x 
-- y_trajectory : each row is an array representing the value of y
-- norm_d : the norm of descent direction
-- distance_PS : measure of Pareto stationarity, with is measured by the norm of the descent direction given by MGDA.
-- alpha : each row is an array representing the value of alpha, the weighting vector.
-- is_start_hitting : Optional. A list of Booleans. It indicates when does $x$ starts hitting the boundary.
-- is_stop_hitting : Optional. A list of Booleans. It indicates when does $x$ stops hitting the boundary and re-renters the interior.
+After running the scripts, the experiment results can be found in `synthetic_benchmark/results`, `fairness_benchmark_2/results`, and `fairness_benchmark_3/results`. 
 
-combined.png shows every plot contained in the file in one single image file. combined2.png does the same thing but plot those curve corresponding to normalised aggregators (no "\*" in the name) and those corresponding to unnormalised aggregators (with "\*" in the name) in different plot.
+### Options
+
+These are the default settings for the three experiments:
+
+|                    | Synthetic            | Fairness (2 objectives) | Fairness (3 objectives) |
+|--------------------|----------------------|-------------------------|-------------------------|
+| Aggregators        | All^[1]              | All^[1]                 | All^[1]                |
+| Synthetic problems | VLMOP2 & Omnitest    | N/A                     | N/A                     |
+| Seeds              | 24, 42, 48, 100, 123 | 24, 42, 64, 100         | 24, 42, 64, 100         |
+| Learning rate      | 0.001                | 0.005                   | 0.005                   |
+| Tolerance          | 1e-2                 | 1e-3                    | 1e-3                    |
 
 
+[1]: Refers to MGDA, Nash-MTL, Nash-MTL\*, UPGrad, UPGrad\*, DualProj, and DualProj\*
+
+The settings can be changed by modifying the hyperparameter below:
+- `--aggregator` : This hyperparameter takes in one or more values. By specifying the names of the aggregators, `run.py` would only run the specified aggregators instead of all of them.
+
+- `--problems` : **(Only for synthetic benchmark)** Similar to `--aggregator`, by specifying the names of the synthetic problems, `run.py` would only run the specified problems instead of all of them.
+
+- `--seeds` : Specifying one or more random seeds for the experiment
+
+- `--lr` : Learning rate
+
+- `--epochs` : Maximum number of epochs
+
+- `--eps` : Stopping criteria tolorance 
+
+## Graph plotting 
+After running the experiments, you may plot the corresponding graphs by running the following commands
+
+- Synthetic benchmark: 
+```
+python3 -m synthetic_benchmark.plot
+```
+- Two objective fairness benchmark: 
+```
+python3 -m fairness_benchmark_2.plot
+```
+- Three objective fairness benchmark: 
+```
+python3 -m fairness_benchmark_3.plot
+```
+
+## Options
+
+The following options are provided for more flexibility
+- `--only_plot_aggregators` : If specified, the script will only plot graphs with the specified aggregators. If not specified, the script will plot for every aggregators contained within `results`
+
+- `--only_plot_seeds` : If specified, the script will only plot graphs with the specified aggregators. If not specified, the script will plot for every seeds contained within `results`
+
+- `--format` : Format of image files. Set the `"png"` by default
+
+After running the scripts, the plots can also be founds in `synthetic_benchmark/results`, `fairness_benchmark_2/results`, and `fairness_benchmark_3/results`. 
+
+In each plot folder, you will find the following plots
+
+1. Synthetic benchmarks
+- First_loss_function.png : The loss curve of the first loss function
+- Second_loss_function.png : The loss curve of the secon loss function
+- d.png : The norm of the descent direction ($\|d\|$) in each epoch
+- Measure_of_Pareto_stationarity.png : The measure of Pareto stationarity in each epoch
+- Combined.png : Every plots above being combined into one single image file
+- Combined2.png : Similar to Combined.png, but instead of plotting every relevant curves in one single subplot, we plot them in two.
+
+2. Two objectives fairness benchmark
+- Cross_entropy_loss.png : The loss curve of the cross-entropy loss
+- DEO.png : The loss curve of the DEO loss
+- d.png : Same as above
+- Measure_of_Pareto_stationarity.png : Same as above
+- Combined.png : Same as above
+- Combined2.png : Same as above
+
+3. Three objectives fairness benchmark
+- Cross_entropy_loss.png : Same as above
+- DEO1.png : The loss curve of the DEO1^[2] loss
+- DEO1.png : The loss curve of the DEO2 loss
+- Measure_of_Pareto_stationarity.png : Same as above
+- Combined.png : Same as above
+- Combined2.png : Same as above
+
+[2]: DEO1 is the same as DEO. We call it DEO1 in order to differentiate it from DEO2. 
