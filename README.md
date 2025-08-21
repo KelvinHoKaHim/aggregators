@@ -84,7 +84,7 @@ In each plot folder, you will find the following plots
 1. Synthetic benchmarks
 - First_loss_function.png : The loss curve of the first loss function
 - Second_loss_function.png : The loss curve of the second loss function
-- d.png : The norm of the descent direction ($\|d\|$) in each epoch
+- d.png : The norm of the descent direction ($\|\|d\|\|$) in each epoch
 - Measure_of_Pareto_stationarity.png : The measure of Pareto stationarity in each epoch
 - Combined.png : Every plots above being combined into one single image file
 - Combined2.png : Similar to Combined.png, but instead of plotting every relevant curves in one single subplot, we plot them in two.
