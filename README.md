@@ -75,7 +75,7 @@ The following options are provided for more flexibility
 
 - `--only_plot_seeds` : If specified, the script will only plot graphs with the specified seeds. If not specified, the script will plot for every seed contained within `results`
 
-- `--format` : Format of image files. Set the `"png"` by default
+- `--format` : Format of image files. Set to `"png"` by default
 
 After running the scripts, the plots can also be founds in `synthetic_benchmark/results`, `fairness_benchmark_2/results`, and `fairness_benchmark_3/results`. 
 
