@@ -109,5 +109,38 @@ class DEOHyperbolicTangentRelaxation2():
         s_positive = logits[(~sensible_attribute.bool()) & (labels == 0)]
         return 1 / n * torch.abs(torch.sum(torch.tanh(self.c * torch.relu(s_positive))) - torch.sum(
             torch.tanh(self.c * torch.relu(s_negative))))
+    
+class DEOEmpirical():
 
+    def __init__(self, label_name='labels', logits_name='logits', s_name='sensible_attribute', c=1):
+        self.label_name = label_name
+        self.logits_name = logits_name
+        self.s_name = s_name
+        self.c = c
+
+    def __call__(self, logits, **kwargs):
+        # logits = kwargs[self.logits_name]
+        labels = kwargs[self.label_name]
+        sensible_attribute = kwargs[self.s_name]
+        s_negative_logits = logits[sensible_attribute.bool() & (labels == 1)]
+        s_positive_logits = logits[(~sensible_attribute.bool()) & (labels == 1)]
+
+        return torch.abs(torch.mean((s_negative_logits > 0).float()) - torch.mean((s_positive_logits > 0).float()))
+
+class DEOEmpirical2():
+
+    def __init__(self, label_name='labels', logits_name='logits', s_name='sensible_attribute', c=1):
+        self.label_name = label_name
+        self.logits_name = logits_name
+        self.s_name = s_name
+        self.c = c
+
+    def __call__(self, logits, **kwargs):
+        # logits = kwargs[self.logits_name]
+        labels = kwargs[self.label_name]
+        sensible_attribute = kwargs[self.s_name]
+        s_negative_logits = logits[sensible_attribute.bool() & (labels == 0)]
+        s_positive_logits = logits[(~sensible_attribute.bool()) & (labels == 0)]
+
+        return torch.abs(torch.mean((s_negative_logits > 0).float()) - torch.mean((s_positive_logits > 0).float()))
 

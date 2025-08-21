@@ -1,6 +1,6 @@
 from libmoon.util import mtl
 from typing import List
-from libmoon.problem.mtl.objectives import BinaryCrossEntropyLoss, DEOHyperbolicTangentRelaxation, DEOHyperbolicTangentRelaxation2
+from libmoon.problem.mtl.objectives import BinaryCrossEntropyLoss, DEOHyperbolicTangentRelaxation, DEOEmpirical
 import torch 
 import os 
 import numpy as np 
@@ -22,8 +22,7 @@ data_val = mtl.get_dataset("adult", type = "val")
 
 
 def evaluate(model):
-    DEO = DEOHyperbolicTangentRelaxation()
-    DEO2 = DEOHyperbolicTangentRelaxation2()
+    DEO = DEOEmpirical()
     x = data_test.x.to(device) 
     y = data_test.y.to(device)
     s = data_test.s1.to(device)
@@ -33,8 +32,7 @@ def evaluate(model):
     n_data = len(prediction)
     success_rate = len(prediction[torch.squeeze(prediction > 0) == y.bool()]) / n_data # a value between 0 and 1, the higher, the better
     fairness1 = DEO(prediction, labels = y, sensible_attribute = s).item() # a positive value, the smaller, the better
-    fairness2 = DEO2(prediction, labels = y, sensible_attribute = s).item() 
-    return (success_rate, fairness1, fairness2)
+    return (success_rate, fairness1)
                                     
 def train(aggregator, seed : int, epochs : int, learning_rate : float, eps : float):
     torch.manual_seed(seed)
@@ -46,7 +44,6 @@ def train(aggregator, seed : int, epochs : int, learning_rate : float, eps : flo
     mgda = MGDA() # initialised the MGDA
     criterion1 = BinaryCrossEntropyLoss() 
     criterion2 = DEOHyperbolicTangentRelaxation()
-    criterion3  = DEOHyperbolicTangentRelaxation2()
     track_loss1 = []
     track_loss2 = []
     track_d = []
@@ -168,10 +165,10 @@ def run_experiment(aggregators : List, seeds : List[int], lr : float, epochs : i
             df.to_csv(csv_filename)
             df.to_pickle(pickle_filename)
 
-            success_rate, fairness1, fairness2 = evaluate(model)
-            print(f"Success rate = {success_rate}, Fairness1 = {fairness1}, Fariness2 = {fairness2}")
+            success_rate, fairness1 = evaluate(model)
+            print(f"Success rate = {success_rate}, Fairness1 = {fairness1}")
             eval_filename = f"{aggregator.name}_evaluation.txt"
-            np.savetxt(os.path.join(data_folder_path, eval_filename), [success_rate, fairness1, fairness2])
+            np.savetxt(os.path.join(data_folder_path, eval_filename), [success_rate, fairness1])
 
 
 if __name__ == "__main__":

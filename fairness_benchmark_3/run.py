@@ -1,6 +1,6 @@
 from libmoon.util import mtl
 from typing import List
-from libmoon.problem.mtl.objectives import BinaryCrossEntropyLoss, DEOHyperbolicTangentRelaxation, DEOHyperbolicTangentRelaxation2
+from libmoon.problem.mtl.objectives import BinaryCrossEntropyLoss, DEOHyperbolicTangentRelaxation, DEOHyperbolicTangentRelaxation2, DEOEmpirical, DEOEmpirical2
 import torch 
 import os 
 import numpy as np 
@@ -22,8 +22,8 @@ data_val = mtl.get_dataset("adult", type = "val")
 
 
 def evaluate(model):
-    DEO = DEOHyperbolicTangentRelaxation()
-    DEO2 = DEOHyperbolicTangentRelaxation2()
+    DEO = DEOEmpirical()
+    DEO2 = DEOEmpirical2()
     x = data_test.x.to(device) 
     y = data_test.y.to(device)
     s = data_test.s1.to(device)
