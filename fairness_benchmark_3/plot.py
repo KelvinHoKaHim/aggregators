@@ -40,7 +40,7 @@ def plot_experiment_results(only_plot_aggregators : Set[int], only_plot_seed : S
         seed_path = os.path.join(results_path, seed_directory)
         if not (os.path.isdir(seed_path) and (lambda s : s[0] == "seed" and s[1].isdigit())(seed_directory.split("_"))): # pass if directory is not named in the format "seed_<seed_number>"
             continue
-        seed = seed_path.split("_")[1]
+        seed = seed_directory.split("_")[1]
         if len(only_plot_seed) > 0 and seed not in only_plot_seed: 
             continue
         data_path = os.path.join(seed_path, "data")
@@ -74,34 +74,34 @@ def plot_experiment_results(only_plot_aggregators : Set[int], only_plot_seed : S
             track_alpha = df['alpha'].to_numpy()
             track_measure_to_PS = df['measure_PS'].to_numpy()
 
-            clipping_threshold = x_clip[aggregator_name]
-            n_iteration = np.arange(int(np.min([len(track_norm_d), clipping_threshold])))
+            clipping_threshold = int(np.min([len(track_norm_d), x_clip[aggregator_name]]))
+            n_iteration = np.arange(clipping_threshold)
 
             # plot individual figures
-            ax_ce.plot(n_iteration, cross_entropy, color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
-            ax_deo1.plot(n_iteration, deo1, color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
-            ax_deo2.plot(n_iteration, deo2, color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
-            ax_dps.plot(n_iteration, track_measure_to_PS, color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_ce.plot(n_iteration, cross_entropy[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_deo1.plot(n_iteration, deo1[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_deo2.plot(n_iteration, deo2[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_dps.plot(n_iteration, track_measure_to_PS[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
         
 
             # plot combined.png 
-            ax_combined[0,0].plot(n_iteration, cross_entropy, color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
-            ax_combined[0,1].plot(n_iteration, deo1, color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
-            ax_combined[1,0].plot(n_iteration, deo2, color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
-            ax_combined[1,1].plot(n_iteration, track_measure_to_PS, color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_combined[0,0].plot(n_iteration, cross_entropy[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_combined[0,1].plot(n_iteration, deo1[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_combined[1,0].plot(n_iteration, deo2[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_combined[1,1].plot(n_iteration, track_measure_to_PS[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
 
             # plt combined2.png
             row_number = 1 if aggregator_name.endswith("*") else 0 # 
-            ax_combined2[row_number,0].plot(n_iteration, cross_entropy, color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
-            ax_combined2[row_number,1].plot(n_iteration, deo1, color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
-            ax_combined2[row_number,2].plot(n_iteration, deo2, color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
-            ax_combined2[row_number,3].plot(n_iteration, track_measure_to_PS, color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_combined2[row_number,0].plot(n_iteration, cross_entropy[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_combined2[row_number,1].plot(n_iteration, deo1[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_combined2[row_number,2].plot(n_iteration, deo2[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_combined2[row_number,3].plot(n_iteration, track_measure_to_PS[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
 
             if aggregator_name == "MGDA": # MGDA is the only aggregator that is plotted on both rows
-                ax_combined2[1,0].plot(n_iteration, cross_entropy, color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
-                ax_combined2[1,1].plot(n_iteration, deo1, color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
-                ax_combined2[1,2].plot(n_iteration, deo2, color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
-                ax_combined2[1,3].plot(n_iteration, track_measure_to_PS, color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+                ax_combined2[1,0].plot(n_iteration, cross_entropy[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+                ax_combined2[1,1].plot(n_iteration, deo1[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+                ax_combined2[1,2].plot(n_iteration, deo2[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+                ax_combined2[1,3].plot(n_iteration, track_measure_to_PS[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
 
 
 

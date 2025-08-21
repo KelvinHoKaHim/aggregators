@@ -40,7 +40,7 @@ def plot_experiment_results(only_plot_aggregators : Set[int], only_plot_seed : S
         seed_path = os.path.join(results_path, seed_directory)
         if not (os.path.isdir(seed_path) and (lambda s : s[0] == "seed" and s[1].isdigit())(seed_directory.split("_"))): # pass if directory is not named in the format "seed_<seed_number>"
             continue
-        seed = seed_path.split("_")[1]
+        seed = seed_directory.split("_")[1]
         if len(only_plot_seed) > 0 and seed not in only_plot_seed: 
             continue
         data_path = os.path.join(seed_path, "data")

@@ -1,0 +1,8 @@
+====================Experiment Details====================
+Aggregators :['MGDA', 'UPGrad', 'UPGrad*', 'DualProj', 'DualProj*', 'Nash-MTL', 'Nash-MTL*']
+Dataset :Adult
+Seeds :[64, 100]
+Learing rate :0.005
+Number of epoch :40000
+Tolorance :0.001
+==========================================================
