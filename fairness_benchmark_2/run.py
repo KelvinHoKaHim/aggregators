@@ -54,58 +54,69 @@ def train(aggregator, seed : int, epochs : int, learning_rate : float, eps : flo
     y = data_train.y.to(device)
     s = data_train.s1.to(device)
     prev_alpha = torch.ones(2).to(device)  # Initialize prev_alpha
+    try: 
+        for epoch in range(epochs): # start training
+            model.zero_grad()
+            prediction = model(x)["logits"]
 
-    for epoch in range(epochs): # start training
-        model.zero_grad()
-        prediction = model(x)["logits"]
+            # Compute two losses
+            loss1 = criterion1(prediction, labels = y)
+            loss2 = criterion2(prediction, labels = y, sensible_attribute = s)
 
-        # Compute two losses
-        loss1 = criterion1(prediction, labels = y)
-        loss2 = criterion2(prediction, labels = y, sensible_attribute = s)
+            # Find gradient for loss1
+            loss1.backward(retain_graph=True)
+            grad1 = [p.grad.clone() for p in model.parameters()]
+            grad1_flat = torch.cat([g.view(-1) for g in grad1])  # Flatten into a vector
+            model.zero_grad()
 
-        # Find gradient for loss1
-        loss1.backward(retain_graph=True)
-        grad1 = [p.grad.clone() for p in model.parameters()]
-        grad1_flat = torch.cat([g.view(-1) for g in grad1])  # Flatten into a vector
-        model.zero_grad()
+            # Compute gradients for loss2
+            loss2.backward(retain_graph=True)
+            grad2 = [p.grad.clone() for p in model.parameters()]
+            grad2_flat = torch.cat([g.view(-1) for g in grad2])  # Flatten into a vector
+            model.zero_grad()
 
-        # Compute gradients for loss2
-        loss2.backward(retain_graph=True)
-        grad2 = [p.grad.clone() for p in model.parameters()]
-        grad2_flat = torch.cat([g.view(-1) for g in grad2])  # Flatten into a vector
-        model.zero_grad()
+    
+            jacobian = torch.stack([grad1_flat, grad2_flat], dim=0) # It has shape 2xn where n is the total number of model parameters
+            if aggregator.name == "Nash-MTL" or aggregator.name == "Nash-MTL*":
+                d, alpha = curr_aggregator(jacobian, prev_alpha)
+                prev_alpha = alpha
+            else:
+                d, alpha = curr_aggregator(jacobian)
+            d_mgda, alpha_mgda = mgda(jacobian)
+            total_loss = alpha[0] * loss1 + alpha[1] * loss2 
+            total_loss.backward()
 
- 
-        jacobian = torch.stack([grad1_flat, grad2_flat], dim=0) # It has shape 2xn where n is the total number of model parameters
-        if aggregator.name == "Nash-MTL" or aggregator.name == "Nash-MTL*":
-            d, alpha = curr_aggregator(jacobian, prev_alpha)
-            prev_alpha = alpha
-        else:
-            d, alpha = curr_aggregator(jacobian)
-        d_mgda, alpha_mgda = mgda(jacobian)
-        total_loss = alpha[0] * loss1 + alpha[1] * loss2 
-        total_loss.backward()
+            with torch.no_grad():
+                for p in model.parameters():
+                    if p.grad is not None:
+                        p.data -= learning_rate * p.grad
 
-        with torch.no_grad():
-            for p in model.parameters():
-                if p.grad is not None:
-                    p.data -= learning_rate * p.grad
+            norm_d = torch.norm(d).item()
+            norm_d_mgda = torch.norm(d_mgda).item()
+            if (epoch + 1) % 10 == 0:
+                print(f"Training with {aggregator.name} with seed {seed}")
+                print(f"Epoch {epoch+1}/{epochs}, Loss1: {loss1.item():.4f}, Loss2: {loss2.item():.4f}, d_MGDA = {norm_d_mgda}")
+            track_loss1.append(loss1.item())
+            track_loss2.append(loss2.item())
+            track_alpha.append(alpha.detach().cpu().numpy())
+            track_d.append(norm_d)
+            track_d_MGDA.append(norm_d_mgda)
+            if norm_d_mgda < eps or norm_d < eps:
+                print(f"EARLY STOPPING at epoch {epoch+1}/{epochs}, Loss1: {loss1.item():.4f}, Loss2: {loss2.item():.4f}")
+                break
 
-        norm_d = torch.norm(d).item()
-        norm_d_mgda = torch.norm(d_mgda).item()
-        if (epoch + 1) % 10 == 0:
-            print(f"Training with {aggregator.name} with seed {seed}")
-            print(f"Epoch {epoch+1}/{epochs}, Loss1: {loss1.item():.4f}, Loss2: {loss2.item():.4f}, d_MGDA = {norm_d_mgda}")
-        track_loss1.append(loss1.item())
-        track_loss2.append(loss2.item())
-        track_alpha.append(alpha.detach().cpu().numpy())
-        track_d.append(norm_d)
-        track_d_MGDA.append(norm_d_mgda)
-        if norm_d_mgda < eps or norm_d < eps:
-            print(f"EARLY STOPPING at epoch {epoch+1}/{epochs}, Loss1: {loss1.item():.4f}, Loss2: {loss2.item():.4f}")
-            break
+        log = f"{aggregator.name}: Training ended at eppoch {epoch+1}/{epochs}. Loss1: {loss1.item():.4f}, Loss2: {loss2.item():.4f}, d_MGDA = {norm_d_mgda}"
+    except Exception as e:
+        e = str(e)
+        track_loss1 = [-1 for i in range(epochs)]
+        track_d = [-1 for i in range(epochs)]
+        track_alpha = [-1 for i in range(epochs)]
+        track_d_MGDA = [-1 for i in range(epochs)]
+        log = f"{aggregator.name}: Training interrupted at {epoch+1}/{epochs} with message '{e}'. Loss1: {loss1.item():.4f}, Loss2: {loss2.item():.4f}, d_MGDA = {norm_d_mgda}"
 
-    return (model, track_loss1, track_loss2, track_d, track_alpha, track_d_MGDA)
+
+    
+    return (model, track_loss1, track_loss2, track_d, track_alpha, track_d_MGDA, log)
 
 
 def run_experiment(aggregators : List, seeds : List[int], lr : float, epochs : int, eps : float):
@@ -146,7 +157,10 @@ def run_experiment(aggregators : List, seeds : List[int], lr : float, epochs : i
             print(f"Aggregator : {aggregator.name}")
             print(f"Seed : {seed}")
 
-            model, track_loss1, track_loss2, track_norm_d, track_alpha, track_measure_to_PS = train(aggregator, seed, epochs, lr, eps)
+            model, track_loss1, track_loss2, track_norm_d, track_alpha, track_measure_to_PS, log = train(aggregator, seed, epochs, lr, eps)
+
+            with open(os.path.join(seed_folder_path, "log.txt"), "a") as f:
+                f.write(log + "\n")
 
             model_path = os.path.join(data_folder_path, f"{aggregator.name}.pt")
             torch.save(model.state_dict(), model_path) # save model
