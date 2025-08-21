@@ -22,7 +22,7 @@ python3 -m fairness_benchmark_2.run
 python3 -m fairness_benchmark_3.run
 ```
 
-After running the scripts, the experiment results can be found in `synthetic_benchmark/results`, `fairness_benchmark_2/results`, and `fairness_benchmark_3/results`. 
+After running the scripts, the experiment results can be found in `synthetic_benchmark/results`, `fairness_benchmark_2/results`, and `fairness_benchmark_3/results` as pickle files and csv files. 
 
 ### Options
 
@@ -40,9 +40,9 @@ These are the default settings for the three experiments:
 [1]: Refers to MGDA, Nash-MTL, Nash-MTL\*, UPGrad, UPGrad\*, DualProj, and DualProj\*
 
 The settings can be changed by modifying the hyperparameter below:
-- `--aggregator` : This hyperparameter takes in one or more values. By specifying the names of the aggregators, `run.py` would only run the specified aggregators instead of all of them.
+- `--aggregator` : This hyperparameter takes in one or more values. By specifying the names of the aggregators, `run.py` would only run the specified aggregators instead of all of them. The hyperparameter only takes in the following values : MGDA, Nash-MTL, Nash-MTL\*, UPGrad, UPGrad\*, DualProj, and DualProj\*
 
-- `--problems` : **(Only for synthetic benchmark)** Similar to `--aggregator`, by specifying the names of the synthetic problems, `run.py` would only run the specified problems instead of all of them.
+- `--problems` : **(Only available for synthetic benchmark)** Similar to `--aggregator`, by specifying the names of the synthetic problems, `run.py` would only run the specified problems instead of all of them.
 
 - `--seeds` : Specifying one or more random seeds for the experiment
 
