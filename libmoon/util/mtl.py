@@ -4,6 +4,25 @@ from libmoon.util.constant import nadir_point_dict, ideal_point_dict
 from libmoon.model import MultiLeNet, FullyConnected
 from libmoon.problem.mtl.settings import adult_setting, credit_setting, compass_setting, mnist_setting, fashion_setting, fmnist_setting
 import torch
+from numpy import array
+
+nadir_point_dict = {
+    'adult': array([0.6, 0.12]),
+    'compass': array([0.52, 0.34]),
+    'credit': array([0.52, 0.016]),
+    'mnist': array([0.36, 0.36]),
+    'fashion': array([0.6, 0.6]),
+    'fmnist': array([0.6, 0.6]),
+}
+
+ideal_point_dict = {
+    'adult': array([0.3, 0.01]),
+    'compass': array([0.04, 0.04]),
+    'credit': array([0.32, 0.002]),
+    'mnist': array([0.2, 0.2]),
+    'fashion': array([0.4, 0.4]),
+    'fmnist': array([0.2, 0.4]),
+}
 
 mtl_dim_dict = {
     'adult' : (88,),
