@@ -50,7 +50,7 @@ The settings can be changed by modifying the hyperparameter below:
 
 - `--epochs` : Maximum number of epochs
 
-- `--eps` : Stopping criteria tolorance 
+- `--eps` : Stopping criteria tolerance 
 
 ## Graph plotting 
 After running the experiments, you may plot the corresponding graphs by running the following commands
@@ -71,9 +71,9 @@ python3 -m fairness_benchmark_3.plot
 ## Options
 
 The following options are provided for more flexibility
-- `--only_plot_aggregators` : If specified, the script will only plot graphs with the specified aggregators. If not specified, the script will plot for every aggregators contained within `results`
+- `--only_plot_aggregators` : If specified, the script will only plot graphs with the specified aggregators. If not specified, the script will plot for every aggregator contained within `results`
 
-- `--only_plot_seeds` : If specified, the script will only plot graphs with the specified aggregators. If not specified, the script will plot for every seeds contained within `results`
+- `--only_plot_seeds` : If specified, the script will only plot graphs with the specified seeds. If not specified, the script will plot for every seed contained within `results`
 
 - `--format` : Format of image files. Set the `"png"` by default
 
@@ -83,7 +83,7 @@ In each plot folder, you will find the following plots
 
 1. Synthetic benchmarks
 - First_loss_function.png : The loss curve of the first loss function
-- Second_loss_function.png : The loss curve of the secon loss function
+- Second_loss_function.png : The loss curve of the second loss function
 - d.png : The norm of the descent direction ($\|d\|$) in each epoch
 - Measure_of_Pareto_stationarity.png : The measure of Pareto stationarity in each epoch
 - Combined.png : Every plots above being combined into one single image file
