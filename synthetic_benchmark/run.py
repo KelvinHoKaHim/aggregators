@@ -161,7 +161,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Hyperparameters for running synthetic problem benchmark")
 
     parser.add_argument("--lr", type=float, default=0.001, help="Learning rate")
-    parser.add_argument("--epochs", type=int, default=400000, help="Number of epochs")
+    parser.add_argument("--epochs", type=int, default=40000, help="Number of epochs")
     parser.add_argument("--eps", type=float, default=1e-2, help="Stopping criteria tolorance")
     parser.add_argument(
         "--aggregators", 
