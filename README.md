@@ -40,7 +40,7 @@ These are the default settings for the three experiments:
 [1]: Refers to MGDA, Nash-MTL, Nash-MTL\*, UPGrad, UPGrad\*, DualProj, and DualProj\*
 
 The settings can be changed by modifying the hyperparameter below:
-- `--aggregator` : This hyperparameter takes in one or more values. By specifying the names of the aggregators, `run.py` would only run the specified aggregators instead of all of them. The hyperparameter only takes in the following values : MGDA, Nash-MTL, Nash-MTL\*, UPGrad, UPGrad\*, DualProj, and DualProj\*
+- `--aggregators` : This hyperparameter takes in one or more values. By specifying the names of the aggregators, `run.py` would only run the specified aggregators instead of all of them. The hyperparameter only takes in the following values : MGDA, Nash-MTL, Nash-MTL\*, UPGrad, UPGrad\*, DualProj, and DualProj\*
 
 - `--problems` : **(Only available for synthetic benchmark)** Similar to `--aggregator`, by specifying the names of the synthetic problems, `run.py` would only run the specified problems instead of all of them.
 
