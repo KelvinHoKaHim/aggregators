@@ -10,9 +10,9 @@ import argparse
 # When curves are ugly, we artificilly clip the curves. Hard code clipping threshold when necessary. Set to np.inf by dafult (i.e. no need clipping)
 x_clip = {
     'MGDA': np.inf,
-    'Nash-MTL': np.inf,
+    'Nash-MTL': 15000,
     'Nash-MTL*': np.inf,
-    'UPGrad': np.inf,
+    'UPGrad': 32000,
     'UPGrad*': np.inf,
     'DualProj': np.inf,
     'DualProj*': np.inf

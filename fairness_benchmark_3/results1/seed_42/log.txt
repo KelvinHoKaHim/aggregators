@@ -1,0 +1,7 @@
+MGDA: Training ended at eppoch 27145/40000. Loss1: 0.5397, Loss2: 0.0119, Loss3: 0.0000, d_MGDA = 0.0
+UPGrad: Training ended at eppoch 36827/40000. Loss1: 0.4341, Loss2: 0.0274, Loss3: 0.0000, d_MGDA = 0.0
+UPGrad*: Training ended at eppoch 40000/40000. Loss1: 0.4425, Loss2: 0.0282, Loss3: 0.0045, d_MGDA = 0.003971169702708721
+DualProj: Training ended at eppoch 40000/40000. Loss1: 0.3942, Loss2: 0.0389, Loss3: 0.0118, d_MGDA = 0.0033494860399514437
+DualProj*: Training ended at eppoch 40000/40000. Loss1: 0.3997, Loss2: 0.0389, Loss3: 0.0124, d_MGDA = 0.004337938502430916
+Nash-MTL: Training ended at eppoch 40000/40000. Loss1: 0.2613, Loss2: 0.0542, Loss3: 0.0041, d_MGDA = 0.16012774407863617
+Nash-MTL*: Training ended at eppoch 22908/40000. Loss1: 0.4945, Loss2: 0.0212, Loss3: 0.0000, d_MGDA = 0.0
