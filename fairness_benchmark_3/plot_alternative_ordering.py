@@ -1,0 +1,190 @@
+import numpy as np
+from matplotlib import pyplot as plt
+from utils.aggregators import MGDA, Nash_MTL, Nash_MTL_star, UPGrad, UPGrad_star, DualProj, DualProj_star, aggregator_dict
+import os
+import pandas as pd
+from typing import Set
+from synthetic_benchmark.run import aggregator_dict
+import argparse
+
+# When curves are ugly, we artificilly clip the curves. Hard code clipping threshold when necessary. Set to np.inf by dafult (i.e. no need clipping)
+x_clip = {
+    'MGDA': np.inf,
+    'Nash-MTL': np.inf,
+    'Nash-MTL*': np.inf,
+    'UPGrad': np.inf,
+    'UPGrad*': np.inf,
+    'DualProj': np.inf,
+    'DualProj*': np.inf
+}
+
+colours = {
+    'MGDA': 'blue',
+    'Nash-MTL': 'gold',
+    'Nash-MTL*': 'orange',
+    'UPGrad': 'green',
+    'UPGrad*': 'olive',
+    'DualProj': 'purple',
+    'DualProj*': 'mediumvioletred'
+}
+
+
+def plot_experiment_results(only_plot_aggregators : Set[int], only_plot_seed : Set[int], image_format : str):
+    results_path = "fairness_benchmark_3/results"
+    if not os.path.isdir(results_path):
+        print(f"Warning : Directory {results_path} does not exist")
+        return 
+
+    seed_list = os.listdir(results_path)
+    for seed_directory in seed_list:
+        seed_path = os.path.join(results_path, seed_directory)
+        if not (os.path.isdir(seed_path) and (lambda s : s[0] == "seed" and s[1].isdigit())(seed_directory.split("_"))): # pass if directory is not named in the format "seed_<seed_number>"
+            continue
+        seed = seed_directory.split("_")[1]
+        if len(only_plot_seed) > 0 and seed not in only_plot_seed: 
+            continue
+        data_path = os.path.join(seed_path, "data")
+        if not os.path.isdir(data_path):
+            print(f"Warning : Directory {data_path} does not exist")
+            continue 
+        plot_path = os.path.join(seed_path, "plots_alternative_ordering")
+        os.makedirs(plot_path, exist_ok=True)
+        #aggregator_list =  sorted(os.listdir(data_path))
+        aggregator_list = ["MGDA.pkl", "Nash-MTL.pkl", "Nash-MTL*.pkl", "UPGrad.pkl", "UPGrad*.pkl", "DualProj.pkl", "DualProj*.pkl"]
+
+        fig_combined, ax_combined = plt.subplots(2, 2, figsize=(12, 12))
+        fig_combined2, ax_combined2 = plt.subplots(2, 4, figsize=(24, 12))
+        fig_ce, ax_ce = plt.subplots(figsize=(6, 6)) # plot for cross entropy loss
+        fig_deo1, ax_deo1 = plt.subplots(figsize=(6, 6)) # plot for DEO1
+        fig_deo2, ax_deo2 = plt.subplots(figsize=(6, 6)) # plot for DEO2
+        fig_dps, ax_dps = plt.subplots(figsize=(6, 6)) # plot for the measure to Pareto stationarity
+
+        for data_filename in aggregator_list:
+            if not (lambda s : s[0] in aggregator_dict and s[1] == "pkl")(data_filename.split(".")): # pass if file name is not of the format "<aggregator_name>.pkl", where aggregator_name must be among MGDA, Nash-MTL, Nash-MTL*, UPGrad, UPGrad*, DualProj, DualProj*
+                continue
+            aggregator_name = data_filename.split(".")[0]
+            if len(only_plot_aggregators) > 0 and aggregator_name not in only_plot_aggregators:
+                    continue
+            pickle_file = os.path.join(data_path, data_filename)
+            print(f"Plotting from {pickle_file}")
+            df = pd.read_pickle(pickle_file)
+            cross_entropy = df["cross_entropy"].to_numpy()
+            deo1 = df['deo1'].to_numpy()
+            deo2 = df['deo2'].to_numpy()
+            track_norm_d = df['norm_d'].to_numpy()
+            track_alpha = df['alpha'].to_numpy()
+            track_measure_to_PS = df['measure_PS'].to_numpy()
+
+            clipping_threshold = int(np.min([len(track_norm_d), x_clip[aggregator_name]]))
+            n_iteration = np.arange(clipping_threshold)
+
+            # plot individual figures
+            ax_ce.plot(n_iteration, cross_entropy[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_deo1.plot(n_iteration, deo1[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_deo2.plot(n_iteration, deo2[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_dps.plot(n_iteration, track_measure_to_PS[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+        
+
+            # plot combined.png 
+            ax_combined[0,0].plot(n_iteration, cross_entropy[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_combined[0,1].plot(n_iteration, deo1[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_combined[1,0].plot(n_iteration, deo2[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_combined[1,1].plot(n_iteration, track_measure_to_PS[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+
+            # plt combined2.png
+            row_number = 1 if aggregator_name.endswith("*") else 0 # 
+            ax_combined2[row_number,0].plot(n_iteration, cross_entropy[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_combined2[row_number,1].plot(n_iteration, deo1[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_combined2[row_number,2].plot(n_iteration, deo2[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+            ax_combined2[row_number,3].plot(n_iteration, track_measure_to_PS[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+
+            if aggregator_name == "MGDA": # MGDA is the only aggregator that is plotted on both rows
+                ax_combined2[1,0].plot(n_iteration, cross_entropy[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+                ax_combined2[1,1].plot(n_iteration, deo1[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+                ax_combined2[1,2].plot(n_iteration, deo2[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+                ax_combined2[1,3].plot(n_iteration, track_measure_to_PS[:clipping_threshold], color = colours[aggregator_name],label = aggregator_name, alpha = 0.5)
+
+
+
+        ax_ce.set_title("Cross-entropy loss")
+        ax_deo1.set_title("DEO1")
+        ax_deo2.set_title("DEO2")
+        ax_dps.set_title("Measure of Pareto stationarity")
+
+        ax_ce.legend(loc='upper right')
+        ax_deo1.legend(loc='upper right')
+        ax_deo2.legend(loc='upper right')
+        ax_dps.legend(loc='upper right')
+
+        fig_ce.savefig(os.path.join(plot_path, f"Cross_entropy_loss.{image_format}"), dpi = 300)
+        fig_deo1.savefig(os.path.join(plot_path, f"DEO1.{image_format}"), dpi = 300)
+        fig_deo2.savefig(os.path.join(plot_path, f"DEO2.{image_format}"), dpi = 300)
+        fig_dps.savefig(os.path.join(plot_path, f"Measure_of_Pareto_stationarity.{image_format}"), dpi = 300)
+
+        plt.close(fig_ce)
+        plt.close(fig_deo1)
+        plt.close(fig_deo2)
+        plt.close(fig_dps)
+
+        ax_combined[0,0].set_title("Cross-entropy loss")
+        ax_combined[0,1].set_title("DEO1")
+        ax_combined[1,0].set_title("DEO2")
+        ax_combined[1,1].set_title("Measure of Pareto stationarity")
+
+        ax_combined[0,0].legend(loc='upper right')
+        ax_combined[0,1].legend(loc='upper right')
+        ax_combined[1,0].legend(loc='upper right')
+        ax_combined[1,1].legend(loc='upper right')
+
+        fig_combined.savefig(os.path.join(plot_path, f"Combined.{image_format}"), dpi = 300)
+        plt.close(fig_combined)
+
+        ax_combined2[0,0].set_title("Cross-entropy loss")
+        ax_combined2[0,1].set_title("DEO1")
+        ax_combined2[0,2].set_title("DEO2")
+        ax_combined2[0,3].set_title("Measure of Pareto stationarity")
+
+        ax_combined2[0,0].legend(loc='upper right')
+        ax_combined2[0,1].legend(loc='upper right')
+        ax_combined2[0,2].legend(loc='upper right')
+        ax_combined2[0,3].legend(loc='upper right')
+
+        ax_combined2[1,0].set_title("Cross-entropy loss")
+        ax_combined2[1,1].set_title("DEO1")
+        ax_combined2[1,2].set_title("DEO2")
+        ax_combined2[1,3].set_title("Measure of Pareto stationarity")
+
+        ax_combined2[1,0].legend(loc='upper right')
+        ax_combined2[1,1].legend(loc='upper right')
+        ax_combined2[1,2].legend(loc='upper right')
+        ax_combined2[1,3].legend(loc='upper right')
+
+        fig_combined2.savefig(os.path.join(plot_path, f"Combined2.{image_format}"), dpi = 300)
+        plt.close(fig_combined2)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Hyperparameters for plotting graphs for faieness(three objectives) benchmark")
+
+    parser.add_argument("--format", type=str, default="png", help="Format of image files")
+    parser.add_argument(
+        "--only_plot_seeds", 
+        type=str, 
+        nargs="+",
+        default=[],
+        help="If provided, then plot only the provided seeds"
+    )
+
+    parser.add_argument(
+        "--only_plot_aggregators", 
+        type=str, 
+        nargs="+",
+        default=[],
+        help="If provided, then plot only the provided seeds"
+    )
+    args = parser.parse_args()
+    only_plot_aggregators = args.only_plot_aggregators
+    only_plot_seeds = args.only_plot_seeds
+    image_format = args.format
+
+    plot_experiment_results(only_plot_aggregators, only_plot_seeds, image_format)
