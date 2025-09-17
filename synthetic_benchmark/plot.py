@@ -7,6 +7,7 @@ from typing import Set
 from synthetic_benchmark.run import aggregator_dict
 import argparse
 
+plt.rcParams.update({'font.size': 40})
 # When curves are ugly, we artificilly clip the curves. Hard code clipping threshold when necessary. Set to np.inf by dafult (i.e. no need clipping)
 x_clip = {
     'MGDA': np.inf,
@@ -110,15 +111,15 @@ def plot_experiment_results(only_plot_aggregator : Set[int], only_plot_seed : Se
 
 
 
-            ax_f1.set_title("First loss function")
-            ax_f2.set_title("Second loss function")
-            ax_d.set_title(r"$\|d\|$")
-            ax_dps.set_title("Measure of Pareto stationarity")
+            ax_f1.set_title("First loss function", fontsize=20)
+            ax_f2.set_title("Second loss function",fontsize=20)
+            ax_d.set_title(r"$\|d\|$",fontsize=20)
+            ax_dps.set_title("Measure of Pareto stationarity",fontsize=20)
 
-            ax_f1.legend(loc='upper right')
-            ax_f2.legend(loc='upper right')
-            ax_d.legend(loc='upper right')
-            ax_dps.legend(loc='upper right')
+            ax_f1.legend(loc='upper right',fontsize=20)
+            ax_f2.legend(loc='upper right',fontsize=20)
+            ax_d.legend(loc='upper right',fontsize=20)
+            ax_dps.legend(loc='upper right',fontsize=20)
 
             fig_f1.savefig(os.path.join(plot_path, f"First_loss_function.{image_format}"), dpi = 300)
             fig_f2.savefig(os.path.join(plot_path, f"Second_loss_function.{image_format}"), dpi = 300)
@@ -130,38 +131,38 @@ def plot_experiment_results(only_plot_aggregator : Set[int], only_plot_seed : Se
             plt.close(fig_d)
             plt.close(fig_dps)
 
-            ax_combined[0,0].set_title("First loss function")
-            ax_combined[0,1].set_title("Second loss function")
-            ax_combined[1,0].set_title(r"$\|d\|$")
-            ax_combined[1,1].set_title("Measure of Pareto stationarity")
+            ax_combined[0,0].set_title("First loss function",fontsize=20)
+            ax_combined[0,1].set_title("Second loss function",fontsize=20)
+            ax_combined[1,0].set_title(r"$\|d\|$",fontsize=20)
+            ax_combined[1,1].set_title("Measure of Pareto stationarity",fontsize=20)
 
-            ax_combined[0,0].legend(loc='upper right')
-            ax_combined[0,1].legend(loc='upper right')
-            ax_combined[1,0].legend(loc='upper right')
-            ax_combined[1,1].legend(loc='upper right')
+            ax_combined[0,0].legend(loc='upper right',fontsize=20)
+            ax_combined[0,1].legend(loc='upper right',fontsize=20)
+            ax_combined[1,0].legend(loc='upper right',fontsize=20)
+            ax_combined[1,1].legend(loc='upper right',fontsize=20)
 
             fig_combined.savefig(os.path.join(plot_path, f"Combined.{image_format}"), dpi = 300)
             plt.close(fig_combined)
 
-            ax_combined2[0,0].set_title("First loss function")
-            ax_combined2[0,1].set_title("Second loss function")
-            ax_combined2[0,2].set_title(r"$\|d\|$")
-            ax_combined2[0,3].set_title("Measure of Pareto stationarity")
+            ax_combined2[0,0].set_title("First loss function",fontsize=20)
+            ax_combined2[0,1].set_title("Second loss function",fontsize=20)
+            ax_combined2[0,2].set_title(r"$\|d\|$",fontsize=20)
+            ax_combined2[0,3].set_title("Measure of Pareto stationarity",fontsize=20)
 
-            ax_combined2[0,0].legend(loc='upper right')
-            ax_combined2[0,1].legend(loc='upper right')
-            ax_combined2[0,2].legend(loc='upper right')
-            ax_combined2[0,3].legend(loc='upper right')
+            ax_combined2[0,0].legend(loc='upper right',fontsize=20)
+            ax_combined2[0,1].legend(loc='upper right',fontsize=20)
+            ax_combined2[0,2].legend(loc='upper right',fontsize=20)
+            ax_combined2[0,3].legend(loc='upper right',fontsize=20)
 
-            ax_combined2[1,0].set_title("First loss function")
-            ax_combined2[1,1].set_title("Second loss function")
-            ax_combined2[1,2].set_title(r"$\|d\|$")
-            ax_combined2[1,3].set_title("Measure of Pareto stationarity")
+            ax_combined2[1,0].set_title("First loss function",fontsize=20)
+            ax_combined2[1,1].set_title("Second loss function",fontsize=20)
+            ax_combined2[1,2].set_title(r"$\|d\|$",fontsize=20)
+            ax_combined2[1,3].set_title("Measure of Pareto stationarity",fontsize=20)
 
-            ax_combined2[1,0].legend(loc='upper right')
-            ax_combined2[1,1].legend(loc='upper right')
-            ax_combined2[1,2].legend(loc='upper right')
-            ax_combined2[1,3].legend(loc='upper right')
+            ax_combined2[1,0].legend(loc='upper right',fontsize=20)
+            ax_combined2[1,1].legend(loc='upper right',fontsize=20)
+            ax_combined2[1,2].legend(loc='upper right',fontsize=20)
+            ax_combined2[1,3].legend(loc='upper right',fontsize=20)
 
             fig_combined2.savefig(os.path.join(plot_path, f"Combined2.{image_format}"), dpi = 300)
             plt.close(fig_combined2)

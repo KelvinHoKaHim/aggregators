@@ -7,6 +7,7 @@ from typing import Set
 from synthetic_benchmark.run import aggregator_dict
 import argparse
 
+plt.rcParams.update({'font.size': 14})
 # When curves are ugly, we artificilly clip the curves. Hard code clipping threshold when necessary. Set to np.inf by dafult (i.e. no need clipping)
 x_clip = {
     'MGDA': np.inf,
