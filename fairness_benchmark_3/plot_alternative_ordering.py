@@ -7,7 +7,7 @@ from typing import Set
 from synthetic_benchmark.run import aggregator_dict
 import argparse
 
-plt.rcParams.update({'font.size': 14})
+
 # When curves are ugly, we artificilly clip the curves. Hard code clipping threshold when necessary. Set to np.inf by dafult (i.e. no need clipping)
 x_clip = {
     'MGDA': np.inf,
@@ -107,15 +107,15 @@ def plot_experiment_results(only_plot_aggregators : Set[int], only_plot_seed : S
 
 
 
-        ax_ce.set_title("Cross-entropy loss")
-        ax_deo1.set_title("DEO1")
-        ax_deo2.set_title("DEO2")
-        ax_dps.set_title("Measure of Pareto stationarity")
+        ax_ce.set_title("Cross-entropy loss", fontsize = 18)
+        ax_deo1.set_title("DEO1", fontsize = 18)
+        ax_deo2.set_title("DEO2", fontsize = 18)
+        ax_dps.set_title("Measure of Pareto stationarity", fontsize = 18)
 
-        ax_ce.legend(loc='upper right')
-        ax_deo1.legend(loc='upper right')
-        ax_deo2.legend(loc='upper right')
-        ax_dps.legend(loc='upper right')
+        ax_ce.legend(loc='upper right', prop={'size': 14})
+        ax_deo1.legend(loc='upper right', prop={'size': 14})
+        ax_deo2.legend(loc='upper right', prop={'size': 14})
+        ax_dps.legend(loc='upper right', prop={'size': 14})
 
         fig_ce.savefig(os.path.join(plot_path, f"Cross_entropy_loss.{image_format}"), dpi = 300)
         fig_deo1.savefig(os.path.join(plot_path, f"DEO1.{image_format}"), dpi = 300)
@@ -127,38 +127,38 @@ def plot_experiment_results(only_plot_aggregators : Set[int], only_plot_seed : S
         plt.close(fig_deo2)
         plt.close(fig_dps)
 
-        ax_combined[0,0].set_title("Cross-entropy loss")
-        ax_combined[0,1].set_title("DEO1")
-        ax_combined[1,0].set_title("DEO2")
-        ax_combined[1,1].set_title("Measure of Pareto stationarity")
+        ax_combined[0,0].set_title("Cross-entropy loss", fontsize = 18)
+        ax_combined[0,1].set_title("DEO1", fontsize = 18)
+        ax_combined[1,0].set_title("DEO2", fontsize = 18)
+        ax_combined[1,1].set_title("Measure of Pareto stationarity", fontsize = 18)
 
-        ax_combined[0,0].legend(loc='upper right')
-        ax_combined[0,1].legend(loc='upper right')
-        ax_combined[1,0].legend(loc='upper right')
-        ax_combined[1,1].legend(loc='upper right')
+        ax_combined[0,0].legend(loc='upper right', prop={'size': 14})
+        ax_combined[0,1].legend(loc='upper right', prop={'size': 14})
+        ax_combined[1,0].legend(loc='upper right', prop={'size': 14})
+        ax_combined[1,1].legend(loc='upper right', prop={'size': 14})
 
         fig_combined.savefig(os.path.join(plot_path, f"Combined.{image_format}"), dpi = 300)
         plt.close(fig_combined)
 
-        ax_combined2[0,0].set_title("Cross-entropy loss")
-        ax_combined2[0,1].set_title("DEO1")
-        ax_combined2[0,2].set_title("DEO2")
-        ax_combined2[0,3].set_title("Measure of Pareto stationarity")
+        ax_combined2[0,0].set_title("Cross-entropy loss", fontsize = 18)
+        ax_combined2[0,1].set_title("DEO1", fontsize = 18)
+        ax_combined2[0,2].set_title("DEO2", fontsize = 18)
+        ax_combined2[0,3].set_title("Measure of Pareto stationarity", fontsize = 18)
 
-        ax_combined2[0,0].legend(loc='upper right')
-        ax_combined2[0,1].legend(loc='upper right')
-        ax_combined2[0,2].legend(loc='upper right')
-        ax_combined2[0,3].legend(loc='upper right')
+        ax_combined2[0,0].legend(loc='upper right', prop={'size': 14})
+        ax_combined2[0,1].legend(loc='upper right', prop={'size': 14})
+        ax_combined2[0,2].legend(loc='upper right', prop={'size': 14})
+        ax_combined2[0,3].legend(loc='upper right', prop={'size': 14})
 
-        ax_combined2[1,0].set_title("Cross-entropy loss")
-        ax_combined2[1,1].set_title("DEO1")
-        ax_combined2[1,2].set_title("DEO2")
-        ax_combined2[1,3].set_title("Measure of Pareto stationarity")
+        ax_combined2[1,0].set_title("Cross-entropy loss", fontsize = 18)
+        ax_combined2[1,1].set_title("DEO1", fontsize = 18)
+        ax_combined2[1,2].set_title("DEO2", fontsize = 18)
+        ax_combined2[1,3].set_title("Measure of Pareto stationarity", fontsize = 18)
 
-        ax_combined2[1,0].legend(loc='upper right')
-        ax_combined2[1,1].legend(loc='upper right')
-        ax_combined2[1,2].legend(loc='upper right')
-        ax_combined2[1,3].legend(loc='upper right')
+        ax_combined2[1,0].legend(loc='upper right', prop={'size': 14})
+        ax_combined2[1,1].legend(loc='upper right', prop={'size': 14})
+        ax_combined2[1,2].legend(loc='upper right', prop={'size': 14})
+        ax_combined2[1,3].legend(loc='upper right', prop={'size': 14})
 
         fig_combined2.savefig(os.path.join(plot_path, f"Combined2.{image_format}"), dpi = 300)
         plt.close(fig_combined2)
